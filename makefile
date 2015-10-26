@@ -66,6 +66,9 @@ ifneq (,$(findstring besm6,$(MAKECMDGOALS)))
   VIDEO_USEFUL = true
   BESM6_BUILD = true
 endif
+ifneq (,$(findstring dmd5620,$(MAKECMDGOALS)))
+  VIDEO_USEFUL = true
+endif
 # building the pdp11, or any vax simulator could use networking support
 ifneq (,$(or $(findstring pdp11,$(MAKECMDGOALS)),$(findstring vax,$(MAKECMDGOALS)),$(findstring all,$(MAKECMDGOALS))))
   NETWORK_USEFUL = true
@@ -1340,6 +1343,13 @@ PDQ3_OPT = -I ${PDQ3D} -DUSE_SIM_IMD
 	${3B2D}/3b2_sysdev.c
 3B2_OPT = -I ${3B2D} -DUSE_INT64 -DSUPP_MEM_ERR
 
+DMD5620D = 3B2/DMD5620
+DMD5620 = ${3B2D}/3b2_cpu.c ${3B2D}/3b2_mmu.c ${DMD5620D}/dmd5620_uart.c \
+	${DMD5620D}/dmd5620_sys.c ${DMD5620D}/dmd5620_io.c ${DMD5620D}/dmd5620_sysdev.c \
+	${VAXD}/vax_2681.c ${DMD5620D}/dmd5620_video.c
+DMD5620_OPT = -I ${3B2D} -I ${DMD5620D} -I ${VAXD} -DDMD5620 -DUSE_INT64 \
+	-DUSE_SIM_VIDEO ${VIDEO_CCDEFS} ${VIDEO_LDFLAGS}
+
 #
 # Build everything (not the unsupported/incomplete simulators)
 #
@@ -1672,3 +1682,9 @@ frontpaneltest : ${BIN}frontpaneltest${EXE}
 ${BIN}frontpaneltest${EXE} : frontpanel/FrontPanelTest.c sim_sock.c sim_frontpanel.c
 	${MKDIRBIN}
 	${CC} frontpanel/FrontPanelTest.c sim_sock.c sim_frontpanel.c $(CC_OUTSPEC) ${LDFLAGS}
+
+dmd5620 : ${BIN}dmd5620${EXE}
+
+${BIN}dmd5620${EXE} : ${DMD5620} ${SIM}
+	${MKDIRBIN}
+	${CC} ${DMD5620} ${SIM} ${DMD5620_OPT} $(CC_OUTSPEC) ${LDFLAGS}

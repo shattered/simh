@@ -323,48 +323,22 @@ void ua2681_update_rxi (UART2681 *ctx)
 uint8 c;
 t_stat r;
 
-//intf ("ua2681_update_rxi I acmd %02x asts %02x ists %02x opcr %02x\r\n", 
-//	ctx->port[PORT_A].cmd, ctx->port[PORT_A].sts, ctx->ists, ctx->opcr);
-
 if (ctx->port[PORT_A].cmd & CMD_ERX) {
-    if (((ctx->port[PORT_A].sts & STS_RXR) == 0) &&
-       (ctx->port[PORT_A].get_char != NULL)) {
-        r = ctx->port[PORT_A].get_char (&c);
-        if (r == SCPE_OK) {
-            ctx->port[PORT_A].buf = c;
-            ctx->port[PORT_A].sts |= STS_RXR;
-            ctx->ists |= ISTS_RAI;
-            }
-        else {
-            ctx->port[PORT_A].sts &= ~STS_RXR;
-//intf ("ua2681_update_rxi: clear RXR (case 4)\r\n");
-            ctx->ists &= ~ISTS_RAI;
-            }
-        }
+    if ((ctx->port[PORT_A].sts & STS_RXR) == 0)
+	ctx->ists |= ISTS_RAI;
+    else
+	ctx->ists &= ~ISTS_RAI;
     }
 else {
     ctx->port[PORT_A].sts &= ~STS_RXR;
-//intf ("ua2681_update_rxi: clear RXR (case 5)\r\n");
     ctx->ists &= ~ISTS_RAI;
     }
 
-//intf ("ua2681_update_rxi O acmd %02x asts %02x ists %02x opcr %02x r %d\r\n", 
-//	ctx->port[PORT_A].cmd, ctx->port[PORT_A].sts, ctx->ists, ctx->opcr, r);
-
 if (ctx->port[PORT_B].cmd & CMD_ERX) {
-    if (((ctx->port[PORT_B].sts & STS_RXR) == 0) &&
-       (ctx->port[PORT_B].get_char != NULL)) {
-        r = ctx->port[PORT_B].get_char (&c);
-        if (r == SCPE_OK) {
-            ctx->port[PORT_B].buf = c;
-            ctx->port[PORT_B].sts |= STS_RXR;
-            ctx->ists |= ISTS_RBI;
-            }
-        else {
-            ctx->port[PORT_B].sts &= ~STS_RXR;
-            ctx->ists &= ~ISTS_RBI;
-            }
-        }
+    if ((ctx->port[PORT_B].sts & STS_RXR) == 0)
+	ctx->ists |= ISTS_RBI;
+    else
+	ctx->ists &= ~ISTS_RBI;
     }
 else {
     ctx->port[PORT_B].sts &= ~STS_RXR;
@@ -386,12 +360,12 @@ uint8 t = ctx->oport;
 
 if (ctx->opcr & 0x80) {
     t &= ~0x80;
-    if (ctx->port[PORT_B].sts & STS_TXR)
+    if (ctx->port[PORT_B].sts & STS_TXE)
 	t |= 0x80;
     }
 if (ctx->opcr & 0x40) {
     t &= ~0x40;
-    if (ctx->port[PORT_A].sts & STS_TXR)
+    if (ctx->port[PORT_A].sts & STS_TXE)
 	t |= 0x40;
     }
 if (ctx->opcr & 0x20) {
@@ -474,7 +448,39 @@ ctx->iport = new;
 
 t_stat ua2681_svc (UART2681 *ctx)
 {
+uint8 c;
+t_stat r;
+
+if (ctx->port[PORT_A].cmd & CMD_ERX) {
+    if (ctx->port[PORT_A].get_char != NULL) {
+	r = ctx->port[PORT_A].get_char (&c);
+	if (r == SCPE_OK) {
+	    if ((ctx->port[PORT_A].sts & STS_RXR) == 0) {
+		ctx->port[PORT_A].buf = c;
+		ctx->port[PORT_A].sts |= STS_RXR;
+		}
+	    else
+		ctx->port[PORT_A].sts |= STS_OER;
+	    }
+	}
+    }
+
+if (ctx->port[PORT_B].cmd & CMD_ERX) {
+    if (ctx->port[PORT_B].get_char != NULL) {
+	r = ctx->port[PORT_B].get_char (&c);
+	if (r == SCPE_OK) {
+	    if ((ctx->port[PORT_B].sts & STS_RXR) == 0) {
+		ctx->port[PORT_B].buf = c;
+		ctx->port[PORT_B].sts |= STS_RXR;
+		}
+	    else
+		ctx->port[PORT_B].sts |= STS_OER;
+	    }
+	}
+    }
+
 ua2681_update_rxi (ctx);
+
 return SCPE_OK;
 }
 

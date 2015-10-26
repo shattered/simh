@@ -27,7 +27,11 @@
 #include <assert.h>
 
 #include "3b2_cpu.h"
+#ifdef DMD5620
+#include "combined_bin.h"
+#else
 #include "rom_400_bin.h"
+#endif
 
 #define MAX_SUB_RETURN_SKIP 9
 
@@ -124,12 +128,19 @@ UNIT cpu_unit = { UDATA (NULL, UNIT_FIX|UNIT_BINK, MAXMEMSIZE) };
 #define UNIT_EXHALT     (1u << UNIT_V_EXHALT)
 
 MTAB cpu_mod[] = {
+#ifdef DMD5620
+    { UNIT_MSIZE, (1u << 18), NULL, "256K",
+      &cpu_set_size, NULL, NULL, "Set Memory to 256K bytes" },
+    { UNIT_MSIZE, (1u << 20), NULL, "1M",
+      &cpu_set_size, NULL, NULL, "Set Memory to 1M bytes" },
+#else
     { UNIT_MSIZE, (1u << 20), NULL, "1M",
       &cpu_set_size, NULL, NULL, "Set Memory to 1M bytes" },
     { UNIT_MSIZE, (1u << 21), NULL, "2M",
       &cpu_set_size, NULL, NULL, "Set Memory to 2M bytes" },
     { UNIT_MSIZE, (1u << 22), NULL, "4M",
       &cpu_set_size, NULL, NULL, "Set Memory to 4M bytes" },
+#endif
     { MTAB_XTD|MTAB_VDV|MTAB_NMO|MTAB_SHP, 0, "HISTORY", "HISTORY",
       &cpu_set_hist, &cpu_show_hist, NULL, "Displays instruction history" },
     { UNIT_EXHALT, UNIT_EXHALT, "Halt on Exception", "EX_HALT",
@@ -528,11 +539,13 @@ t_stat cpu_boot(int32 unit_num, DEVICE *dptr)
     R[NUM_SP] = pread_w(R[NUM_PCBP] + 8);
     sim_debug(INIT_MSG, &cpu_dev, "Setting initial SP: %08x\n", R[NUM_SP]);
 
+#if 0
     if (R[NUM_PSW] & PSW_I_MASK) {
         R[NUM_PSW] &= ~PSW_I_MASK;
         R[NUM_PCBP] = pread_w(R[NUM_PCBP] + 12);
         sim_debug(INIT_MSG, &cpu_dev, "Setting new initial PCBP: %08x\n", R[NUM_PCBP]);
     }
+#endif
 
     /* set ISC to External Reset */
     R[NUM_PSW] &= ~PSW_ISC_MASK;
@@ -1319,6 +1332,9 @@ void cpu_context_switch_1(uint32 new_pcbp)
 
     /* If R is set, save current R0-R8/FP/AP in PCB */
     if (R[NUM_PSW] & PSW_R_MASK) {
+        sim_debug(EXECUTE_MSG, &cpu_dev,
+                  "PSW<R> IS SET, SAVING REGISTERS (addr=%08x, fp=%08x, r0=%08x to %08x).\n",
+                  R[NUM_PCBP] + 24, R[NUM_FP], R[0], cur_pcbp + 28);
         write_w(cur_pcbp + 20, R[NUM_AP]);
         write_w(cur_pcbp + 24, R[NUM_FP]);
         write_w(cur_pcbp + 28, R[0]);
@@ -1345,6 +1361,10 @@ t_bool cpu_handle_irq(uint8 ipl, uint8 id, t_bool nmi)
     /* Maybe handle the IRQ */
     psw_ipl = ((R[NUM_PSW] & PSW_IPL_MASK) >> PSW_IPL) & 0xf;
     quick = (R[NUM_PSW] & PSW_QIE_MASK) >> PSW_QIE;
+
+    sim_debug(IRQ_MSG, &cpu_dev,
+              "IRQ level = %d, id %02x, PSW IPL level = %d, nmi = %d\n",
+              ipl, id, psw_ipl, nmi);
 
     if (ipl <= psw_ipl && !nmi) {
         sim_debug(IRQ_MSG, &cpu_dev, "Ignoring IRQ\n");
@@ -1427,8 +1447,10 @@ t_stat sim_instr(void)
             }
         }
 
+#ifndef DMD5620
         /* Process DMA requests */
         dmac_service_drqs();
+#endif
 
         sim_interval--;
 
@@ -2222,6 +2244,9 @@ t_stat sim_instr(void)
             if (R[NUM_PSW] & PSW_R_MASK) {
                 R[NUM_AP] = read_w(a + 20);
                 R[NUM_FP] = read_w(a + 24);
+                sim_debug(EXECUTE_MSG, &cpu_dev,
+                          "PSW<R> IS SET, RESTORING REGISTERS (addr=%08x, fp=%08x, r0=%08x from %08x).\n",
+                          a + 24, R[NUM_FP], read_w(a + 28), a + 28);
                 R[0] = read_w(a + 28);
                 R[1] = read_w(a + 32);
                 R[2] = read_w(a + 36);

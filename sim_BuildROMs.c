@@ -50,6 +50,7 @@ struct ROM_File_Descriptor {
    {"swtp6800/swtp6800/swtbug.bin",     "swtp6800/swtp6800/swtp_swtbug_bin.h",       1024,            0xFFFE4FBC,        "swtp_swtbug_bin"},
    {"3B2/rom_400.bin",                   "3B2/rom_400_bin.h",                       32768,            0xFFD55762,        "rom_400_bin"},
    {"3B2/rom_500.bin",                   "3B2/rom_500_bin.h",                      131072,            0xFFDC0EB8,        "rom_500_bin"},
+   {"3B2/DMD5620/combined.bin",         "3B2/DMD5620/combined_bin.h",              131072,            0xFF7BAC62,        "combined_bin"},
    };
 
 

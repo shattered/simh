@@ -27,7 +27,11 @@
 #include <assert.h>
 #include "3b2_mmu.h"
 
+#ifdef DMD5620
+#define BOOT_CODE_SIZE 0x20000
+#else
 #define BOOT_CODE_SIZE 0x8000
+#endif
 
 /*******************************************************************
  *
@@ -61,6 +65,8 @@
  *    PD: Page Descriptor. When using Paged addressing,
  *
  *******************************************************************/
+
+int32 *crash = NULL;
 
 UNIT mmu_unit = { UDATA(NULL, 0, 0) };
 
@@ -267,8 +273,12 @@ t_bool addr_is_mem(uint32 pa)
 
 t_bool addr_is_io(uint32 pa)
 {
+#ifdef DMD5620
+    return ((pa >= IO_BASE && pa < IO_BASE + IO_SIZE));
+#else
     return ((pa >= IO_BASE && pa < IO_BASE + IO_SIZE) ||
             (pa >= IOB_BASE && pa < IOB_BASE + IOB_SIZE));
+#endif
 }
 
 /*
@@ -296,7 +306,8 @@ uint32 pread_w_u(uint32 pa)
         index = (pa - PHYS_MEM_BASE) >> 2;
     } else {
 #ifndef SUPP_MEM_ERR
-        sim_debug(READ_MSG, &mmu_dev, "!!!! Cannot read physical address %08x\n", pa);
+        sim_debug(READ_MSG, &cpu_dev, "READ ERROR. address %08x not mapped (w)\n", pa);
+        *crash = pa;
         cpu_set_exception(NORMAL_EXCEPTION, EXTERNAL_MEMORY_FAULT);
 #endif
         return 0;
@@ -311,8 +322,8 @@ uint32 pread_w_u(uint32 pa)
 uint32 pread_w(uint32 pa)
 {
     if (pa & 3) {
-        sim_debug(READ_MSG, &mmu_dev,
-                  "!!!! Cannot read physical address. ALIGNMENT ISSUE: %08x\n", pa);
+        sim_debug(READ_MSG, &cpu_dev, "READ ERROR. address %08x unaligned (w)\n", pa);
+        *crash = pa;
         cpu_set_exception(NORMAL_EXCEPTION, EXTERNAL_MEMORY_FAULT);
     }
 
@@ -326,8 +337,8 @@ void pwrite_w(uint32 pa, uint32 val)
 {
 
     if (pa & 3) {
-        sim_debug(WRITE_MSG, &mmu_dev,
-                  "!!!! Cannot write physical address. ALIGNMENT ISSUE: %08x\n", pa);
+        sim_debug(WRITE_MSG, &cpu_dev, "WRITE ERROR. address %08x unaligned (w)\n", pa);
+        *crash = pa;
         cpu_set_exception(NORMAL_EXCEPTION, EXTERNAL_MEMORY_FAULT);
     }
 
@@ -340,8 +351,8 @@ void pwrite_w(uint32 pa, uint32 val)
         RAM[(pa - PHYS_MEM_BASE) >> 2] = val;
     } else {
 #ifndef SUPP_MEM_ERR
-        sim_debug(WRITE_MSG, &mmu_dev,
-                  "!!!! Cannot write physical address. %08x\n", pa);
+        sim_debug(WRITE_MSG, &cpu_dev, "WRITE ERROR. address %08x not mapped (w)\n", pa);
+        *crash = pa;
         cpu_set_exception(NORMAL_EXCEPTION, EXTERNAL_MEMORY_FAULT);
 #endif
     }
@@ -356,8 +367,8 @@ uint16 pread_h(uint32 pa)
     uint32 index;
 
     if (pa & 1) {
-        sim_debug(READ_MSG, &mmu_dev,
-                  "!!!! Cannot read physical address. ALIGNMENT ISSUE %08x\n", pa);
+        sim_debug(READ_MSG, &cpu_dev, "READ ERROR. address %08x unaligned (h)\n", pa);
+        *crash = pa;
         cpu_set_exception(NORMAL_EXCEPTION, EXTERNAL_MEMORY_FAULT);
     }
 
@@ -373,8 +384,8 @@ uint16 pread_h(uint32 pa)
         index = (pa - PHYS_MEM_BASE) >> 2;
     } else {
 #ifndef SUPP_MEM_ERR
-        sim_debug(READ_MSG, &mmu_dev,
-                  "!!!! Cannot read physical address. %08x\n", pa);
+        sim_debug(READ_MSG, &cpu_dev, "READ ERROR. address %08x not mapped (h)\n", pa);
+        *crash = pa;
         cpu_set_exception(NORMAL_EXCEPTION, EXTERNAL_MEMORY_FAULT);
 #endif
         return 0;
@@ -394,11 +405,11 @@ void pwrite_h(uint32 pa, uint16 val)
 {
     uint32 *m;
     uint32 index;
-    uint32 wval = (uint32)val;
+//  uint32 wval = (uint32)val;
 
     if (pa & 1) {
-        sim_debug(WRITE_MSG, &mmu_dev,
-                  "!!!! Cannot write physical address %08x, ALIGNMENT ISSUE\n", pa);
+        sim_debug(WRITE_MSG, &cpu_dev, "WRITE ERROR. address %08x unaligned (h)\n", pa);
+        *crash = pa;
         cpu_set_exception(NORMAL_EXCEPTION, EXTERNAL_MEMORY_FAULT);
         return;
     }
@@ -413,16 +424,17 @@ void pwrite_h(uint32 pa, uint16 val)
         index = (pa - PHYS_MEM_BASE) >> 2;
     } else {
 #ifndef SUPP_MEM_ERR
-        sim_debug(WRITE_MSG, &mmu_dev, "!!!! Cannot write physical address %08x\n", pa);
+        sim_debug(WRITE_MSG, &cpu_dev, "WRITE ERROR. address %08x not mapped (h)\n", pa);
+        *crash = pa;
         cpu_set_exception(NORMAL_EXCEPTION, EXTERNAL_MEMORY_FAULT);
 #endif
         return;
     }
 
     if (pa & 2) {
-        m[index] = (m[index] & ~HALF_MASK) | wval;
+        m[index] = (m[index] & ~HALF_MASK) | val;
     } else {
-        m[index] = (m[index] & HALF_MASK) | (wval << 16);
+        m[index] = (m[index] & HALF_MASK) | (val << 16);
     }
 }
 
@@ -444,6 +456,8 @@ uint8 pread_b(uint32 pa)
         data = RAM[(pa - PHYS_MEM_BASE) >> 2];
     } else {
 #ifndef SUPP_MEM_ERR
+        sim_debug(READ_MSG, &cpu_dev, "READ ERROR. address %08x not mapped (b)\n", pa);
+        *crash = pa;
         cpu_set_exception(NORMAL_EXCEPTION, EXTERNAL_MEMORY_FAULT);
 #endif
         return 0;
@@ -472,6 +486,8 @@ void pwrite_b(uint32 pa, uint8 val)
         index = (pa - PHYS_MEM_BASE) >> 2;
     } else {
 #ifndef SUPP_MEM_ERR
+        sim_debug(WRITE_MSG, &cpu_dev, "WRITE ERROR. address %08x not mapped (b)\n", pa);
+        *crash = pa;
         cpu_set_exception(NORMAL_EXCEPTION, EXTERNAL_MEMORY_FAULT);
 #endif
         return;
