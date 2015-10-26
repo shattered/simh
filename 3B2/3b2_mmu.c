@@ -30,6 +30,14 @@
 
 #include "3b2_mmu.h"
 
+#ifdef DMD5620
+#define BOOT_CODE_SIZE 0x20000
+#else
+#define BOOT_CODE_SIZE 0x8000
+#endif
+
+int32 *crash = NULL;
+
 UNIT mmu_unit = { UDATA(NULL, 0, 0) };
 
 MMU_STATE mmu_state;
@@ -245,8 +253,12 @@ t_bool addr_is_mem(uint32 pa)
 
 t_bool addr_is_io(uint32 pa)
 {
+#ifdef DMD5620
+    return ((pa >= IO_BASE && pa < IO_BASE + IO_SIZE));
+#else
     return ((pa >= IO_BASE && pa < IO_BASE + IO_SIZE) ||
             (pa >= IOB_BASE && pa < IOB_BASE + IOB_SIZE));
+#endif
 }
 
 /*
@@ -300,6 +312,7 @@ void pwrite_w(uint32 pa, uint32 val)
                   "[%08x] Cannot write physical address. ALIGNMENT ISSUE: %08x\n",
                   R[NUM_PC], pa);
         csr_data |= CSRALGN;
+        *crash = pa;
         cpu_abort(NORMAL_EXCEPTION, EXTERNAL_MEMORY_FAULT);
     }
 
@@ -327,6 +340,7 @@ uint16 pread_h(uint32 pa)
                   "[%08x] Cannot read physical address. ALIGNMENT ISSUE %08x\n",
                   R[NUM_PC], pa);
         csr_data |= CSRALGN;
+        *crash = pa;
         cpu_abort(NORMAL_EXCEPTION, EXTERNAL_MEMORY_FAULT);
     }
 
@@ -358,13 +372,14 @@ void pwrite_h(uint32 pa, uint16 val)
 {
     uint32 *m;
     uint32 index;
-    uint32 wval = (uint32)val;
+//  uint32 wval = (uint32)val;
 
     if (pa & 1) {
         sim_debug(WRITE_MSG, &mmu_dev,
                   "[%08x] Cannot write physical address %08x, ALIGNMENT ISSUE\n",
                   R[NUM_PC], pa);
         csr_data |= CSRALGN;
+        *crash = pa;
         cpu_abort(NORMAL_EXCEPTION, EXTERNAL_MEMORY_FAULT);
     }
 
@@ -381,9 +396,9 @@ void pwrite_h(uint32 pa, uint16 val)
     }
 
     if (pa & 2) {
-        m[index] = (m[index] & ~HALF_MASK) | wval;
+        m[index] = (m[index] & ~HALF_MASK) | val;
     } else {
-        m[index] = (m[index] & HALF_MASK) | (wval << 16);
+        m[index] = (m[index] & HALF_MASK) | (val << 16);
     }
 }
 

@@ -31,7 +31,11 @@
 #include <assert.h>
 
 #include "3b2_cpu.h"
+#ifdef DMD5620
+#include "combined_bin.h"
+#else
 #include "rom_400_bin.h"
+#endif
 
 #define MAX_SUB_RETURN_SKIP 9
 
@@ -139,12 +143,19 @@ UNIT cpu_unit = { UDATA (NULL, UNIT_FIX|UNIT_BINK|UNIT_IDLE, MAXMEMSIZE) };
 #define UNIT_EXHALT     (1u << UNIT_V_EXHALT)
 
 MTAB cpu_mod[] = {
+#ifdef DMD5620
+    { UNIT_MSIZE, (1u << 18), NULL, "256K",
+      &cpu_set_size, NULL, NULL, "Set Memory to 256K bytes" },
+    { UNIT_MSIZE, (1u << 20), NULL, "1M",
+      &cpu_set_size, NULL, NULL, "Set Memory to 1M bytes" },
+#else
     { UNIT_MSIZE, (1u << 20), NULL, "1M",
       &cpu_set_size, NULL, NULL, "Set Memory to 1M bytes" },
     { UNIT_MSIZE, (1u << 21), NULL, "2M",
       &cpu_set_size, NULL, NULL, "Set Memory to 2M bytes" },
     { UNIT_MSIZE, (1u << 22), NULL, "4M",
       &cpu_set_size, NULL, NULL, "Set Memory to 4M bytes" },
+#endif
     { MTAB_XTD|MTAB_VDV|MTAB_NMO|MTAB_SHP, 0, "HISTORY", "HISTORY",
       &cpu_set_hist, &cpu_show_hist, NULL, "Displays instruction history" },
     { MTAB_XTD|MTAB_VDV, 0, "IDLE", "IDLE", &sim_set_idle, &sim_show_idle },
@@ -536,10 +547,12 @@ t_stat cpu_boot(int32 unit_num, DEVICE *dptr)
     R[NUM_PC] = pread_w(R[NUM_PCBP] + 4);
     R[NUM_SP] = pread_w(R[NUM_PCBP] + 8);
 
+#if 0
     if (R[NUM_PSW] & PSW_I_MASK) {
         R[NUM_PSW] &= ~PSW_I_MASK;
         R[NUM_PCBP] += 12;
     }
+#endif
 
     /* set ISC to External Reset */
     R[NUM_PSW] &= ~PSW_ISC_MASK;
@@ -1475,6 +1488,9 @@ static SIM_INLINE void cpu_context_switch_1(uint32 new_pcbp)
 
     /* If R is set, save current R0-R8/FP/AP in PCB */
     if (R[NUM_PSW] & PSW_R_MASK) {
+        sim_debug(EXECUTE_MSG, &cpu_dev,
+                  "SAVING REGISTERS R[0]..R[8] (addr=%08x, fp=%08x, r0=%08x to %08x).\n",
+                  R[NUM_PCBP] + 24, R[NUM_FP], R[0], cur_pcbp + 28);
         write_w(R[NUM_PCBP] + 24, R[NUM_FP]);
         write_w(R[NUM_PCBP] + 28, R[0]);
         write_w(R[NUM_PCBP] + 32, R[1]);
@@ -1667,6 +1683,11 @@ t_stat sim_instr(void)
             cpu_nmi = FALSE;
             cpu_in_wait = FALSE;
         }
+
+#ifndef DMD5620
+        /* Process DMA requests */
+        dmac_service_drqs();
+#endif
 
         if (cpu_in_wait) {
             if (sim_idle_enab) {
@@ -2645,6 +2666,9 @@ t_stat sim_instr(void)
             /* Restore registers if R bit is set */
             if (R[NUM_PSW] & PSW_R_MASK) {
                 R[NUM_FP] = read_w(a + 24, ACC_AF);
+                sim_debug(EXECUTE_MSG, &cpu_dev,
+                          "PSW<R> IS SET, RESTORING REGISTERS (addr=%08x, fp=%08x, r0=%08x from %08x).\n",
+                          a + 24, R[NUM_FP], read_w(a + 28), a + 28);
                 R[0] = read_w(a + 28, ACC_AF);
                 R[1] = read_w(a + 32, ACC_AF);
                 R[2] = read_w(a + 36, ACC_AF);

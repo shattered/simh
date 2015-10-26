@@ -31,7 +31,11 @@
 #ifndef _3B2_MMU_H
 #define _3B2_MMU_H
 
+#ifdef DMD5620
+#include "dmd5620_defs.h"
+#else
 #include "3b2_defs.h"
+#endif
 
 
 /************************************************************************
