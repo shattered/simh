@@ -1166,6 +1166,9 @@ uint8 decode_instruction(instr *instr)
     offset += get_mnemonic(&mn, pa);
 
     if (mn == NULL) {
+        sim_debug(EXECUTE_MSG, &cpu_dev,
+                  ">>> [%08x]: Unable to decode instruction! No mnemonic found.\n",
+                  R[NUM_PC]);
         cpu_set_exception(NORMAL_EXCEPTION, ILLEGAL_OPCODE);
         return offset;
     }
@@ -1173,6 +1176,9 @@ uint8 decode_instruction(instr *instr)
     instr->mn = mn;
 
     if (mn->op_count < 0) {
+        sim_debug(EXECUTE_MSG, &cpu_dev,
+                  ">>> [%08x]: Unable to decode instruction! mn=%s, op_count is -1.\n",
+                  R[NUM_PC], mn->mnemonic);
         cpu_set_exception(NORMAL_EXCEPTION, ILLEGAL_OPCODE);
         return offset;
     }
@@ -1731,7 +1737,7 @@ t_stat sim_instr(void)
         case CLRB:
             cpu_write_op(dst, 0);
             cpu_set_n_flag(0);
-            cpu_set_z_flag(0);
+            cpu_set_z_flag(-1);
             cpu_set_c_flag(0);
             cpu_set_v_flag(0);
             break;
@@ -2218,6 +2224,9 @@ t_stat sim_instr(void)
         case SPOPRD:
         case SPOPRS:
             /* TODO: Implement coprocessor support */
+            sim_debug(EXECUTE_MSG, &cpu_dev,
+                      "[%08x] SPOP/SPOPRD/SPOPRS not implemented.\n",
+                      R[NUM_PC]);
             cpu_set_exception(NORMAL_EXCEPTION, EXTERNAL_MEMORY_FAULT);
             break;
         case SUBW2:
@@ -2335,13 +2344,13 @@ t_stat sim_instr(void)
                 reason = STOP_EX;
             }
 
-            et  = R[NUM_PSW] & 3;
+            et  = R[NUM_PSW] & PSW_ET_MASK;
             isc = (R[NUM_PSW] & PSW_ISC_MASK) >> PSW_ISC;
 
             switch(et) {
             case NORMAL_EXCEPTION:
                 sim_debug(EXECUTE_MSG, &cpu_dev,
-                          "*** [PC=%08x] NORMAL EXCEPTION: isc=%d\n",
+                          ">>> [%08x] NORMAL EXCEPTION: isc=%d\n",
                           R[NUM_PC], isc);
                 cpu_perform_gate(0, isc << 3);
                 break;
@@ -2718,7 +2727,14 @@ void cpu_set_exception(uint8 et, uint8 isc)
         return;
     }
 
-    R[NUM_PSW] = (R[NUM_PSW] & ~(PSW_ISC_MASK|PSW_ET_MASK)) | et | (isc << PSW_ISC);
+    sim_debug(EXECUTE_MSG, &cpu_dev,
+              ">>> [%08x]: Setting Exception. et=%d, isc=%d\n",
+              R[NUM_PC], et, isc);
+
+    R[NUM_PSW] = R[NUM_PSW] & ~(PSW_ISC_MASK); /* Clear ISC */
+    R[NUM_PSW] = R[NUM_PSW] & ~(PSW_ET_MASK);  /* Clear ET  */
+    R[NUM_PSW] = R[NUM_PSW] | et;              /* Set ET    */
+    R[NUM_PSW] = R[NUM_PSW] | isc << PSW_ISC;  /* Set ISC   */
 
     if (et == 3 && (isc == BREAKPOINT_TRAP ||
                     isc == INTEGER_OVERFLOW ||

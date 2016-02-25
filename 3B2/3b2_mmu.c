@@ -256,6 +256,7 @@ uint32 pread_w_u(uint32 pa)
         index = (pa - PHYS_MEM_BASE) >> 2;
     } else {
 #ifndef SUPP_MEM_ERR
+        sim_debug(READ_MSG, &mmu_dev, "!!!! Cannot read physical address %08x\n", pa);
         cpu_set_exception(NORMAL_EXCEPTION, EXTERNAL_MEMORY_FAULT);
 #endif
         return 0;
@@ -270,6 +271,8 @@ uint32 pread_w_u(uint32 pa)
 uint32 pread_w(uint32 pa)
 {
     if (pa & 3) {
+        sim_debug(WRITE_MSG, &mmu_dev,
+                  "!!!! Cannot write physical address. ALIGNMENT ISSUE %08x\n", pa);
         cpu_set_exception(NORMAL_EXCEPTION, EXTERNAL_MEMORY_FAULT);
     }
 
@@ -283,6 +286,8 @@ void pwrite_w(uint32 pa, uint32 val)
 {
 
     if (pa & 3) {
+        sim_debug(WRITE_MSG, &mmu_dev,
+                  "!!!! Cannot write physical address. ALIGNMENT ISSUE %08x\n", pa);
         cpu_set_exception(NORMAL_EXCEPTION, EXTERNAL_MEMORY_FAULT);
     }
 
@@ -295,6 +300,8 @@ void pwrite_w(uint32 pa, uint32 val)
         RAM[(pa - PHYS_MEM_BASE) >> 2] = val;
     } else {
 #ifndef SUPP_MEM_ERR
+        sim_debug(WRITE_MSG, &mmu_dev,
+                  "!!!! Cannot write physical address. %08x\n", pa);
         cpu_set_exception(NORMAL_EXCEPTION, EXTERNAL_MEMORY_FAULT);
 #endif
     }
@@ -309,6 +316,8 @@ uint16 pread_h(uint32 pa)
     uint32 index;
 
     if (pa & 1) {
+        sim_debug(READ_MSG, &mmu_dev,
+                  "!!!! Cannot read physical address. ALIGNMENT ISSUE %08x\n", pa);
         cpu_set_exception(NORMAL_EXCEPTION, EXTERNAL_MEMORY_FAULT);
     }
 
@@ -324,6 +333,8 @@ uint16 pread_h(uint32 pa)
         index = (pa - PHYS_MEM_BASE) >> 2;
     } else {
 #ifndef SUPP_MEM_ERR
+        sim_debug(READ_MSG, &mmu_dev,
+                  "!!!! Cannot read physical address. %08x\n", pa);
         cpu_set_exception(NORMAL_EXCEPTION, EXTERNAL_MEMORY_FAULT);
 #endif
         return 0;
@@ -346,6 +357,8 @@ void pwrite_h(uint32 pa, uint16 val)
     uint32 wval = (uint32)val;
 
     if (pa & 1) {
+        sim_debug(WRITE_MSG, &mmu_dev,
+                  "!!!! Cannot write physical address %08x, ALIGNMENT ISSUE\n", pa);
         cpu_set_exception(NORMAL_EXCEPTION, EXTERNAL_MEMORY_FAULT);
         return;
     }
@@ -360,6 +373,7 @@ void pwrite_h(uint32 pa, uint16 val)
         index = (pa - PHYS_MEM_BASE) >> 2;
     } else {
 #ifndef SUPP_MEM_ERR
+        sim_debug(WRITE_MSG, &mmu_dev, "!!!! Cannot write physical address %08x\n", pa);
         cpu_set_exception(NORMAL_EXCEPTION, EXTERNAL_MEMORY_FAULT);
 #endif
         return;

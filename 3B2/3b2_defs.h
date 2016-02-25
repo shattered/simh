@@ -163,7 +163,7 @@
 
 #define PSW_ET_MASK            3
 #define PSW_TM_MASK           (1 << PSW_TM)
-#define PSW_ISC_MASK          (7 << PSW_ISC)
+#define PSW_ISC_MASK          (15 << PSW_ISC)
 #define PSW_RI_MASK           (3 << PSW_RI)
 #define PSW_I_MASK            (1 << PSW_RI)
 #define PSW_R_MASK            (1 << (PSW_RI + 1))
