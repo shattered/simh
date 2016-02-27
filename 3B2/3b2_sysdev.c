@@ -43,7 +43,7 @@ DEBTAB sys_deb_tab[] = {
     { NULL,         0                                  }
 };
 
-uint8 *NVRAM = NULL;
+uint32 *NVRAM = NULL;
 
 extern DEVICE cpu_dev;
 
@@ -240,8 +240,9 @@ t_stat nvram_reset(DEVICE *dptr)
     sim_debug(INIT_MSG, &nvram_dev, "NVRAM Initialization\n");
 
     if (NVRAM == NULL) {
-        NVRAM = (uint8 *)calloc(NVRAMSIZE, sizeof(uint8));
-        memset(NVRAM, 0x5a, sizeof(uint8) * NVRAMSIZE);
+        NVRAM = (uint32 *)calloc(NVRAMSIZE, sizeof(uint32));
+        memset(NVRAM, 0x5a, sizeof(uint32) * NVRAMSIZE);
+        nvram_unit.filebuf = NVRAM;
     }
 
     if (NVRAM == NULL) {
@@ -294,20 +295,21 @@ uint32 nvram_read(uint32 pa, uint8 size)
 {
     uint32 offset = pa - NVRAMBASE;
     uint32 data;
+    uint32 sc = (~(offset & 3) << 3) & 0x1f;
 
     switch(size) {
     case 8:
-        data = NVRAM[offset] & 0xff;
+        data = (NVRAM[offset >> 2] >> sc) & BYTE_MASK;
         break;
     case 16:
-        data = ((NVRAM[offset] << 8) |
-                (NVRAM[offset + 1])) & 0xffff;
+        if (offset & 2) {
+            data = NVRAM[offset >> 2] & HALF_MASK;
+        } else {
+            data = (NVRAM[offset >> 2] >> 16) & HALF_MASK;
+        }
         break;
     case 32:
-        data = ((NVRAM[offset] << 24) |
-                (NVRAM[offset + 1] << 16) |
-                (NVRAM[offset + 2] << 8) |
-                NVRAM[offset + 3]) & 0xffffffff;
+        data = NVRAM[offset >> 2];
         break;
     }
 
@@ -320,23 +322,27 @@ uint32 nvram_read(uint32 pa, uint8 size)
 void nvram_write(uint32 pa, uint32 val, uint8 size)
 {
     uint32 offset = pa - NVRAMBASE;
+    uint32 index = offset >> 2;
+    uint32 sc, mask;
 
     sim_debug(WRITE_MSG, &nvram_dev, "NVRAM WRITE %d B @ %08x=%08x\n",
               size, pa, val);
 
     switch(size) {
     case 8:
-        NVRAM[offset] = val & 0xff;
+        sc = (~(pa & 3) << 3) & 0x1f;
+        mask = 0xff << sc;
+        NVRAM[index] = (NVRAM[index] & ~mask) | (val << sc);
         break;
     case 16:
-        NVRAM[offset] = (val >> 8) & 0xff;
-        NVRAM[offset + 1] = val & 0xff;
+        if (offset & 2) {
+            NVRAM[index] = (NVRAM[index] & ~HALF_MASK) | val;
+        } else {
+            NVRAM[index] = (NVRAM[index] & HALF_MASK) | (val << 16);
+        }
         break;
     case 32:
-        NVRAM[offset] = (val >> 24) & 0xff;
-        NVRAM[offset + 1] = (val >> 16) & 0xff;
-        NVRAM[offset + 2] = (val >> 8) & 0xff;
-        NVRAM[offset + 3] = val & 0xff;
+        NVRAM[index] = val;
         break;
     }
 }
