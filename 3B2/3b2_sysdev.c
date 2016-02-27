@@ -240,8 +240,8 @@ t_stat nvram_reset(DEVICE *dptr)
     sim_debug(INIT_MSG, &nvram_dev, "NVRAM Initialization\n");
 
     if (NVRAM == NULL) {
-        NVRAM = (uint32 *)calloc(NVRAMSIZE, sizeof(uint32));
-        memset(NVRAM, 0x5a, sizeof(uint32) * NVRAMSIZE);
+        NVRAM = (uint32 *)calloc(NVRAMSIZE >> 2, sizeof(uint32));
+        memset(NVRAM, 0, sizeof(uint32) * NVRAMSIZE >> 2);
         nvram_unit.filebuf = NVRAM;
     }
 
