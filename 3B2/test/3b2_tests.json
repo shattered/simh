@@ -1,0 +1,281 @@
+/**********************************************************************
+ *
+ * 3B2 Unit Tests - Input File
+ *
+ * This file describes a suite of tests for the SIMH 3B2 emulator.
+ * Tests are specified using JSON, for ease of parsing. Each test
+ * consists of the following:
+ *
+ *   - A descriptive name for the test.
+ *
+ *   - An optional "setup" block, where registers or memory
+ *     locations may be initilized.
+ *
+ *   - A required "body" block, which is an array of assembly
+ *     mnemonics to execute.
+ *
+ *   - A required "asserts" block, where memory locations and
+ *     registers may be asserted to be in an expected state.
+ * 
+ * This file can be assembled into a SIMH load file with 
+ * the we32as.rb Ruby script, located here:
+ *
+ *   http://www.loomcom.com/3b2/we32as.rb
+ *
+ *********************************************************************/
+{
+  /**** ADD Tests ****************************************************/
+
+  "ADDW3 should add results - No Carry or Overflow": {
+    "setup":{
+      "psw":"81e104",
+      "r0":"fffffff0",
+      "r1":"f",
+      "r2":"0"
+    },
+
+    "body":["ADDW3 %r0,%r1,%r2"],
+
+    "asserts":{
+      "r2":"ffffffff",
+      "psw":"a1e104" /* N flag will have been set */
+    }
+  },
+
+  "ADDW3 should add results - Carry Set": {
+    "setup":{
+      "psw":"81e104",
+      "r0":"ffffffff",
+      "r1":"1",
+      "r2":"0"
+    },
+
+    "body":["ADDW3 %r0,%r1,%r2"],
+
+    "asserts":{
+      "r2":"0",
+      /* Z flag will have been set because result is 0 */
+      /* No overflow, but carry should be set */
+      "psw":"95e104"
+    }
+  },
+  
+  "ADDW3 should add results - Overflow Set": {
+    "setup":{
+      "psw":"81e104",
+      "r0":"7fffffff",
+      "r1":"1",
+      "r2":"0"
+    },
+
+    "body":["ADDW3 %r0,%r1,%r2"],
+
+    "asserts":{
+      "r2":"80000000",
+      /* Negative and Overflow flags should be set */
+      "psw":"a9e104"
+    }
+  },
+
+
+  /**** ALSW3 Tests **************************************************/
+
+  "ALSW3 should left shift word":{
+    "setup":{
+      "r0":"8f0fdffd"
+    },
+
+    "body":["ALSW3 &2,%r0,%r0"],
+
+    "asserts":{
+      "r0":"3c3f7ff4"
+    }
+  },
+
+  /**** CLRW Tests **** *********************************************/
+
+  "CLRW should clear word":{
+    "setup":{
+      "psw":"0",
+      "r0":"12345678"
+    },
+    
+    "body":["CLRW %r0"],
+
+    "asserts":{
+      "r0":"0",
+      "psw":"100004"
+    }
+  },
+
+  /**** LLSH3 Tests *************************************************/
+
+  "LLSH3 should shift and zero pad":{
+    "setup":{
+      "r0":"1"
+    },
+    
+    "body":["LLSH3 &2,%r0,%r0"],
+
+    "asserts":{
+      "r0":"4"
+    }
+  },
+
+  "LLSH3 should shift and one pad":{
+    "setup":{
+      "r0":"0f0fdffd"
+    },
+
+    "body":["LLSH3 &2,%r0,%r0"],
+
+    "asserts":{
+      "r0":"ffff7ff4"
+    }
+  },
+
+  /**** MOVB Tests *************************************************/
+
+  "MOVB should fill padding correctly: int value":{
+    "body":[
+      "MOVB &-1,%r0"
+    ],
+    
+    "asserts":{
+      "r0":"ffffffff"
+    }
+  },
+
+  "MOVB should fill padding correctly: byte value":{
+    "body":[
+      "MOVB {byte}&-1,%r0"
+    ],
+
+    "asserts":{
+      "r0":"ffffffff"
+    }
+  },
+
+  "MOVB should fill padding correctly: halfword value":{
+    "body":[
+      "MOVB {uhalf}&-1,{byte}%r7"
+    ],
+
+    "asserts":{
+      "r7":"ffffffff"
+    }
+  },
+
+  /**** ORW3 Tests *************************************************/
+
+  "ORW3 should OR correctly to a new register":{
+    "setup":{
+      "r0":"01010101",
+      "r1":"10101010"
+    },
+
+    "body":["ORW3 %r0,%r1,%r2"],
+
+    "asserts":{
+      "r2":"11111111"
+    }
+  },
+
+  "ORW3 should OR correctly to the same register":{
+    "setup":{
+      "r0":"01010101",
+      "r1":"10101010"
+    },
+
+    "body":["ORW3 %r0,%r1,%r1"],
+
+    "asserts":{
+      "r1":"11111111"
+    }
+  },
+
+  /**** EXTFW Tests **************************************************/
+
+  "EXTFW should extract a bitfield": {
+    "setup":{
+      "r0":"00000000",
+      "r1":"01234567"
+    },
+
+    "body":["EXTFW &10,&4,%r1,%r0"],
+
+    "asserts":{
+      "r0":"456"
+    }
+  },
+  
+  /**** INSFW Tests **************************************************/
+
+  "INSFW should insert a bitfield": {
+    "setup":{
+      "r0":"abcdef01",
+      "r1":"00000567"
+    },
+
+    "body":["INSFW &11,&8,%r1,%r0"],
+
+    "asserts":{
+      "r0":"abc56701"
+    }
+  },
+
+  /**** MOVBLW Tests ***************************************************/
+
+  "MOVBLW should move all words and leave r0,r1,r2 in correct states":{
+    "setup":{
+      /* Source words */
+      "02002100":"5",
+      "02002104":"10",
+      "02002108":"20",
+      
+      /* 200210c shouldn't get copied, it's out of range */
+      "0200210c":"30",
+
+      /* Set up registers to copy three words */
+      "r0":"2002100",
+      "r1":"2002200",
+      "r2":"3"
+    },
+
+    "body":["MOVBLW"],
+
+    "asserts":{
+      "r0":"200210c",
+      "r1":"200220c",
+      "r2":"0",
+
+      "2002200":"5",
+      "2002204":"10",
+      "2002208":"20",
+
+      /* 200220c should not have been written to */
+      "200220c":"0"
+    }
+  },
+
+  /**** ROTW Tests ***************************************************/
+  "ROTW should rotate word":{
+    "setup":{
+      "r0":"f",
+      "r1":"1",
+      "r2":"80000000"
+    },
+
+    "body":[
+      "ROTW &4,%r0,%r0",     /* should become 0xf0000000 */
+      "ROTW &1,%r1,%r1",     /* should become 0x80000000 */
+      "ROTW &31,%r2,%r2"     /* should become 0x00000001 */
+    ],
+
+    "asserts":{
+      "r0":"f0000000",
+      "r1":"80000000",
+      "r2":"1"
+    }
+  }
+}
