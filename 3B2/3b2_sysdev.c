@@ -195,21 +195,48 @@ DEVICE nvram_dev = {
     "NVRAM", &nvram_unit, nvram_reg, NULL,
     1, 16, 8, 4, 16, 32,
     &nvram_ex, &nvram_dep, &nvram_reset,
-    NULL, NULL, NULL, NULL,
-    DEV_DEBUG, 0, sys_deb_tab
+    NULL, &nvram_attach, &nvram_detach,
+    NULL, DEV_DEBUG, 0, sys_deb_tab, NULL, NULL,
+    NULL, NULL, NULL,
+    &nvram_description
 };
 
 t_stat nvram_ex(t_value *vptr, t_addr exta, UNIT *uptr, int32 sw)
 {
+    uint32 addr = (uint32) exta;
+
+    if ((vptr == NULL) || (addr & 03)) {
+        return SCPE_ARG;
+    }
+
+    if (addr >= NVRAMSIZE) {
+        return SCPE_NXM;
+    }
+
+    *vptr = NVRAM[addr >> 2];
+
     return SCPE_OK;
 }
 
 t_stat nvram_dep(t_value val, t_addr exta, UNIT *uptr, int32 sw)
 {
+    uint32 addr = (uint32) exta;
+
+    if (addr & 03) {
+        return SCPE_ARG;
+    }
+
+    if (addr >= NVRAMSIZE) {
+        return SCPE_NXM;
+    }
+
+    NVRAM[addr >> 2] = (uint32) val;
+
     return SCPE_OK;
 }
 
-t_stat nvram_reset(DEVICE *dptr) {
+t_stat nvram_reset(DEVICE *dptr)
+{
     sim_debug(INIT_MSG, &nvram_dev, "NVRAM Initialization\n");
 
     if (NVRAM == NULL) {
@@ -223,6 +250,45 @@ t_stat nvram_reset(DEVICE *dptr) {
 
     return SCPE_OK;
 }
+
+const char *nvram_description(DEVICE *dptr)
+{
+    return "Non-volatile memory";
+}
+
+t_stat nvram_attach(UNIT *uptr, char *cptr)
+{
+    t_stat r;
+
+    /* If we've been asked to attach, make sure the ATTABLE
+       and BUFABLE flags are set on the unit */
+    uptr->flags = uptr->flags | (UNIT_ATTABLE | UNIT_BUFABLE);
+
+    r = attach_unit(uptr, cptr);
+
+    if (r != SCPE_OK) {
+        /* Unset the ATTABLE and BUFABLE flags if we failed. */
+        uptr->flags = uptr->flags & ~(UNIT_ATTABLE | UNIT_BUFABLE);
+    } else {
+        uptr->hwmark = (uint32) uptr->capac;
+    }
+
+    return r;
+}
+
+t_stat nvram_detach(UNIT *uptr)
+{
+    t_stat r;
+
+    r = detach_unit(uptr);
+
+    if ((uptr->flags & UNIT_ATT) == 0) {
+        uptr->flags = uptr->flags & ~(UNIT_ATTABLE | UNIT_BUFABLE);
+    }
+
+    return r;
+}
+
 
 uint32 nvram_read(uint32 pa, uint8 size)
 {
