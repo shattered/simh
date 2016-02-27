@@ -1712,13 +1712,7 @@ t_stat sim_instr(void)
         case CFLUSH:
             break;
         case CALLPS:
-            sim_debug(EXECUTE_MSG, &cpu_dev,
-                      ">>> CALLPS: R[0] = %08x. Before call, PC=%08x\n",
-                      R[0], R[NUM_PC]);
-
             if (cpu_execution_level() != EX_LVL_KERN) {
-                sim_debug(EXECUTE_MSG, &cpu_dev,
-                          ">>> CALLPS: Not at Kernel Level. Setting exception.\n");
                 cpu_set_exception(NORMAL_EXCEPTION, PRIVILEGED_OPCODE);
                 break;
             }
@@ -1855,16 +1849,19 @@ t_stat sim_instr(void)
             result = cpu_read_op(dst) + 1;
             cpu_write_op(dst, (uint32)(result & WORD_MASK));
             cpu_set_nz_flags(result, dst);
+            cpu_set_v_flag(a == 0x80000000);
             break;
         case INCH:
             a = cpu_read_op(dst) + 1;
             cpu_write_op(dst, a);
             cpu_set_nz_flags(a, dst);
+            cpu_set_v_flag(a == 0x8000);
             break;
         case INCB:
             a = cpu_read_op(dst) + 1;
             cpu_write_op(dst, a);
             cpu_set_nz_flags(a, dst);
+            cpu_set_v_flag(a == 0x80);
             break;
         case INSFW:
         case INSFH:
@@ -1967,10 +1964,12 @@ t_stat sim_instr(void)
         case ROTW:
             a = cpu_read_op(src1) & 31;
             b = (uint32) cpu_read_op(src2);
-            c = (CHAR_BIT*sizeof(a)-1);
-            d = (b >> a) | (b << (32-a));
+            mask = (CHAR_BIT * sizeof(a) - 1);
+            d = (b >> a) | (b << ((-a) & mask));
             cpu_write_op(dst, d);
             cpu_set_nz_flags(a, src1);
+            cpu_set_v_flag(0);
+            cpu_set_c_flag(0);
             break;
         case MOVAW:
             a = cpu_effective_address(src1);
@@ -2339,7 +2338,6 @@ t_stat sim_instr(void)
         };
 
         if (cpu_exception) {
-
             if (cpu_unit.flags & UNIT_EXHALT) {
                 reason = STOP_EX;
             }
