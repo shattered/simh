@@ -481,8 +481,8 @@ void cpu_load_rom()
         return;
     }
 
-    for (i = 0; i < ROM_IMG_LEN; i++) {
-        val = rom_400_bin[i];
+    for (i = 0; i < BOOT_CODE_SIZE; i++) {
+        val = BOOT_CODE_ARRAY[i];
         sc = (~(i & 3) << 3) & 0x1f;
         mask = 0xff << sc;
         index = i >> 2;
@@ -572,12 +572,12 @@ t_stat cpu_reset(DEVICE *dptr)
 {
     /* Allocate memory */
     if (ROM == NULL) {
-        ROM = (uint32 *) calloc(ROM_SIZE >> 2, sizeof(uint32));
+        ROM = (uint32 *) calloc(BOOT_CODE_SIZE >> 2, sizeof(uint32));
         if (ROM == NULL) {
             return SCPE_MEM;
         }
 
-        memset(ROM, 0, ROM_SIZE >> 2);
+        memset(ROM, 0, BOOT_CODE_SIZE >> 2);
     }
 
     if (RAM == NULL) {
@@ -2682,7 +2682,7 @@ static void cpu_write_op(operand * op, int32 val)
     /* Literal mode is not legal. */
     if (op->mode < 4 || op->mode == 15) {
         sim_debug(EXECUTE_MSG, &cpu_dev,
-                  "[DBG] Exception because literal mode is not allowed.\n");
+                  "Exception because literal mode is not allowed.\n");
         cpu_set_exception(NORMAL_EXCEPTION, EXTERNAL_MEMORY_FAULT);
         return;
     }
@@ -2691,7 +2691,7 @@ static void cpu_write_op(operand * op, int32 val)
     if (op->reg == 15 &&
         (op->mode == 4 || op->mode == 5 || op->mode == 6)) {
         sim_debug(EXECUTE_MSG, &cpu_dev,
-                  "[DBG] Exception because immediate mode is not allowed.\n");
+                  "Exception because immediate mode is not allowed.\n");
         cpu_set_exception(NORMAL_EXCEPTION, EXTERNAL_MEMORY_FAULT);
         return;
     }

@@ -32,6 +32,8 @@
 #include "3b2_defs.h"
 #include "3b2_cpu.h"
 
+#define TODBASE   0x41000
+#define TODSIZE   0x10
 #define TIMERBASE 0x42000
 #define TIMERSIZE 0x20
 #define NVRAMBASE 0x43000
@@ -82,5 +84,9 @@ t_stat csr_dep(t_value val, t_addr exta, UNIT *uptr, int32 sw);
 t_stat csr_reset(DEVICE *dptr);
 uint32 csr_read(uint32 pa, uint8 size);
 void csr_write(uint32 pa, uint32 val, uint8 size);
+
+/* TOD */
+uint32 tod_read(uint32 pa, uint8 size);
+void tod_write(uint32 pa, uint32 val, uint8 size);
 
 #endif

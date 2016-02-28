@@ -445,3 +445,11 @@ void timer_write(uint32 pa, uint32 val, uint8 size)
         break;
     }
 }
+
+uint32 tod_read(uint32 pa, uint8 size) {
+    return 0;
+}
+
+void tod_write(uint32 pa, uint32 val, uint8 size) {
+    return;
+}

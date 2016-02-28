@@ -26,6 +26,8 @@
 
 #include "3b2_mmu.h"
 
+#define BOOT_CODE_SIZE 0x8000
+
 /*******************************************************************
  *
  * The WE32101 MMU divides the virtual address space into four
@@ -216,7 +218,7 @@ SIM_INLINE void mmu_disable()
 
 t_bool addr_is_rom(uint32 pa)
 {
-    return (pa < ROM_SIZE);
+    return (pa < BOOT_CODE_SIZE);
 }
 
 t_bool addr_is_mem(uint32 pa)

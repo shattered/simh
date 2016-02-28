@@ -60,7 +60,6 @@
 #define PHYS_MEM_BASE 0x2000000
 
 #define ROM_BASE      0
-#define ROM_SIZE      0x10000
 #define IO_BASE       0x40000
 #define IO_SIZE       0x10000
 #define IOB_BASE      0x200000
