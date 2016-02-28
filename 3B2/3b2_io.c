@@ -79,7 +79,9 @@ uint32 io_read(uint32 pa, uint8 size)
            4-port serial board */
         switch(pa) {
         case 0x200001:
-            return 0x03;
+            return 0x02;
+        case 0x200000:
+            return 0x01;
         default:
             return 0;
         };
@@ -106,7 +108,7 @@ void io_write(int32 pa, int32 val, uint8 size)
 
     /* IO Board Area - Unimplemented */
     if (pa >= 0x200000 && pa < 0x2000000) {
-        sim_debug(IO_D_MSG, &cpu_dev, "[IO BOARD WRITE] ADDR=%08x\n", pa);
+        sim_debug(IO_D_MSG, &cpu_dev, "[IO BOARD WRITE] ADDR=%08x, DATA=%08x\n", pa, val);
         return;
     }
 

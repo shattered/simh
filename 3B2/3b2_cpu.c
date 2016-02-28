@@ -1442,12 +1442,19 @@ t_stat sim_instr(void)
                 reason = STOP_EX;
             }
 
-            et  = R[NUM_PSW] & 3;
+            et  = R[NUM_PSW] & PSW_ET_MASK;
             isc = (R[NUM_PSW] & PSW_ISC_MASK) >> PSW_ISC;
 
-            sim_debug(EXECUTE_MSG, &cpu_dev,
-                      "*** [PC=%08x]: DECODE EXCEPTION! et=%d, isc=%d\n",
-                      R[NUM_PC], et, isc);
+            switch(et) {
+            case NORMAL_EXCEPTION:
+                sim_debug(EXECUTE_MSG, &cpu_dev,
+                          ">>> [%08x] NORMAL EXCEPTION: isc=%d\n",
+                          R[NUM_PC], isc);
+                cpu_perform_gate(0, isc << 3);
+                break;
+            }
+
+            continue;
         }
 
 
@@ -2152,8 +2159,9 @@ t_stat sim_instr(void)
             a = cpu_pop_word(); /* PSW */
             b = cpu_pop_word(); /* PC */
 
-            /* TODO: Illegal level change if old PSW<CM> != new
-               PSW<CM> */
+            if ((a & PSW_CM_MASK) < (R[NUM_PSW] & PSW_CM_MASK)) {
+                cpu_set_exception(NORMAL_EXCEPTION, ILLEGAL_LEVEL_CHANGE);
+            }
 
             /* Clear some state and move it from the current PSW */
             a &= ~PSW_IPL_MASK;
@@ -2249,11 +2257,11 @@ t_stat sim_instr(void)
         case RESTORE:
             a = R[NUM_FP] - 28;
             b = read_w(a);
-            result = R[NUM_FP] - 24;
+            c = R[NUM_FP] - 24;
 
             for (d = src1->reg; d < NUM_FP; d++) {
-                R[d] = read_w(result);
-                result += 4;
+                R[d] = read_w(c);
+                c += 4;
             }
 
             R[NUM_FP] = b;
