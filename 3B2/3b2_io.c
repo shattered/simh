@@ -76,13 +76,18 @@ uint32 io_read(uint32 pa, uint8 size)
     if (pa >= 0x200000 && pa < 0x2000000) {
         sim_debug(IO_D_MSG, &cpu_dev, "[%08x] [IO BOARD READ] ADDR=%08x\n", R[NUM_PC], pa);
 
-        /* This is an experiment. Device id 0x0003 is "PORTS", a
-           4-port serial board */
+        /* This is an experiment. These devices are not yet
+           implemented, but I want to see if 'filledt' can find
+           them. */
         switch(pa) {
+        case 0x200000:      /* IO Board 2 - PORTS */
+            return 0x00;
         case 0x200001:
-            return 0x02;
-        case 0x200000:
-            return 0x01;
+            return 0x03;
+        case 0x400000:      /* IO Board 1 - TAPE controller */
+            return 0x00;
+        case 0x400001:
+            return 0x05;
         default:
             return 0;
         };
