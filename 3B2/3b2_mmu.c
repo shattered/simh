@@ -100,43 +100,77 @@ uint32 mmu_read(uint32 pa, uint8 size)
     switch ((pa >> 8) & 0xf) {
     case MMU_SDCL:
         data = mmu_state.sdcl[offset];
+        sim_debug(READ_MSG, &mmu_dev,
+                  "MMU_SDCL[%d] = %08x\n",
+                  offset ,data);
         break;
     case MMU_SDCH:
         data = mmu_state.sdch[offset];
+        sim_debug(READ_MSG, &mmu_dev,
+                  "MMU_SDCH[%d] = %08x\n",
+                  offset, data);
         break;
     case MMU_PDCRL:
         data = mmu_state.pdcrl[offset];
+        sim_debug(READ_MSG, &mmu_dev,
+                  "MMU_PDCRL[%d] = %08x\n",
+                  offset, data);
         break;
     case MMU_PDCRH:
         data = mmu_state.pdcrh[offset];
+        sim_debug(READ_MSG, &mmu_dev,
+                  "MMU_PDCRH[%d] = %08x\n",
+                  offset, data);
         break;
     case MMU_PDCLL:
         data = mmu_state.pdcll[offset];
+        sim_debug(READ_MSG, &mmu_dev,
+                  "MMU_PDCLL[%d] = %08x\n",
+                  offset, data);
         break;
     case MMU_PDCLH:
         data = mmu_state.pdclh[offset];
+        sim_debug(READ_MSG, &mmu_dev,
+                  "MMU_PDCLH[%d] = %08x\n",
+                  offset, data);
         break;
     case MMU_SRAMA:
         data = mmu_state.sra[offset];
+        sim_debug(READ_MSG, &mmu_dev,
+                  "MMU_SRAMA[%d] = %08x\n",
+                  offset, data);
         break;
     case MMU_SRAMB:
         data = mmu_state.srb[offset];
+        sim_debug(READ_MSG, &mmu_dev,
+                  "MMU_SRAMB[%d] = %08x\n",
+                  offset, data);
         break;
     case MMU_FC:
         data = mmu_state.fcode;
+        sim_debug(READ_MSG, &mmu_dev,
+                  "MMU_FC[%d] = %08x\n",
+                  offset, data);
         break;
     case MMU_FA:
         data = mmu_state.faddr;
+        sim_debug(READ_MSG, &mmu_dev,
+                  "MMU_FA[%d] = %08x\n",
+                  offset, data);
         break;
     case MMU_CONF:
         data = mmu_state.conf;
+        sim_debug(READ_MSG, &mmu_dev,
+                  "MMU_CONF[%d] = %08x\n",
+                  offset, data);
         break;
     case MMU_VAR:
         data = mmu_state.var;
+        sim_debug(READ_MSG, &mmu_dev,
+                  "MMU_VAR[%d] = %08x\n",
+                  offset, data);
         break;
     }
-
-    sim_debug(READ_MSG, &mmu_dev, "%08x, returning %08x [offset=%02x]\n", pa, data, offset);
 
     return data;
 }
@@ -147,52 +181,80 @@ void mmu_write(uint32 pa, uint32 val, uint8 size)
 
     offset = (pa & 0xff) >> 2;
 
-    sim_debug(WRITE_MSG, &mmu_dev, "%08x=%02x [offset=%02x]\n", pa, val, offset);
-
     switch ((pa >> 8) & 0xf) {
     case MMU_SDCL:
+        sim_debug(WRITE_MSG, &mmu_dev,
+                  "MMU_SDCL[%d] = %08x\n",
+                  offset, val);
         mmu_state.sdcl[offset] = val;
         break;
     case MMU_SDCH:
+        sim_debug(WRITE_MSG, &mmu_dev,
+                  "MMU_SDCH[%d] = %08x\n",
+                  offset, val);
         mmu_state.sdch[offset] = val;
         break;
     case MMU_PDCRL:
+        sim_debug(WRITE_MSG, &mmu_dev,
+                  "MMU_PDCRL[%d] = %08x\n",
+                  offset, val);
         mmu_state.pdcrl[offset] = val;
         break;
     case MMU_PDCRH:
+        sim_debug(WRITE_MSG, &mmu_dev,
+                  "MMU_PDCRH[%d] = %08x\n",
+                  offset, val);
         mmu_state.pdcrh[offset] = val;
         break;
     case MMU_PDCLL:
+        sim_debug(WRITE_MSG, &mmu_dev,
+                  "MMU_PDCLL[%d] = %08x\n",
+                  offset, val);
         mmu_state.pdcll[offset] = val;
         break;
     case MMU_PDCLH:
+        sim_debug(WRITE_MSG, &mmu_dev,
+                  "MMU_PDCLH[%d] = %08x\n",
+                  offset, val);
         mmu_state.pdclh[offset] = val;
         break;
     case MMU_SRAMA:
         mmu_state.sra[offset] = val;
         mmu_state.sec[offset].addr = val & 0xffffffe0;
         sim_debug(WRITE_MSG, &mmu_dev,
-                  "  >> SRAMA: SDT[%d] Addr = %08x\n",
-                  offset, mmu_state.sec[offset].addr);
+                  "MMU_SRAMA[%d] = %08x (addr=%08x)\n",
+                  offset, val, mmu_state.sec[offset].addr);
         break;
     case MMU_SRAMB:
         mmu_state.srb[offset] = val;
         mmu_state.sec[offset].len = (val >> 10) & 0x1fff;
         sim_debug(WRITE_MSG, &mmu_dev,
-                  "  >> SRAMB: SDT[%d] Len = %08x\n",
-                  offset, mmu_state.sec[offset].len);
+                  "MMU_SRAMB[%d] = %08x (len=%06x)\n",
+                  offset, val, mmu_state.sec[offset].len);
         break;
     case MMU_FC:
         mmu_state.fcode = val;
+        sim_debug(WRITE_MSG, &mmu_dev,
+                  "MMU_FC[%d] = %08x\n",
+                  offset, val);
         break;
     case MMU_FA:
         mmu_state.faddr = val;
+        sim_debug(WRITE_MSG, &mmu_dev,
+                  "MMU_FA[%d] = %08x\n",
+                  offset, val);
         break;
     case MMU_CONF:
         mmu_state.conf = val;
+        sim_debug(WRITE_MSG, &mmu_dev,
+                  "MMU_CONF[%d] = %08x\n",
+                  offset, val);
         break;
     case MMU_VAR:
         mmu_state.var = val;
+        sim_debug(WRITE_MSG, &mmu_dev,
+                  "MMU_VAR[%d] = %08x\n",
+                  offset, val);
         break;
     }
 }
@@ -451,8 +513,6 @@ uint32 mmu_xlate_addr(uint32 addr)
     if (!mmu_enabled()) {
         return addr;
     }
-
-    /* TODO: MMU is enabled. Perform address translation */
 
     return addr;
 }
