@@ -190,7 +190,7 @@ mnemonic ops[256] = {
     {0x09, -1, OP_NONE, NA, "???",    -1, -1, -1, -1},
     {0x0a, -1, OP_NONE, NA, "???",    -1, -1, -1, -1},
     {0x0b, -1, OP_NONE, NA, "???",    -1, -1, -1, -1},
-    {0x0c, -1, OP_NONE, NA, "???",    -1, -1, -1, -1},
+    {0x0c,  2, OP_DESC, WD, "MOVTRW",  0, -1, -1,  1},
     {0x0d, -1, OP_NONE, NA, "???",    -1, -1, -1, -1},
     {0x0e, -1, OP_NONE, NA, "???",    -1, -1, -1, -1},
     {0x0f, -1, OP_NONE, NA, "???",    -1, -1, -1, -1},
@@ -1974,7 +1974,7 @@ t_stat sim_instr(void)
             mask = (CHAR_BIT * sizeof(a) - 1);
             d = (b >> a) | (b << ((-a) & mask));
             cpu_write_op(dst, d);
-            cpu_set_nz_flags(a, src1);
+            cpu_set_nz_flags(d, dst);
             cpu_set_v_flag(0);
             cpu_set_c_flag(0);
             break;
@@ -1982,6 +1982,14 @@ t_stat sim_instr(void)
             a = cpu_effective_address(src1);
             cpu_write_op(dst, a);
             cpu_set_nz_flags(a, src1);
+            break;
+        case MOVTRW:
+            a = cpu_read_op(src1);
+            result = mmu_xlate_addr(a);
+            cpu_write_op(dst, result);
+            cpu_set_nz_flags(result, dst);
+            cpu_set_v_flag(0);
+            cpu_set_c_flag(0);
             break;
         case MOVW:
         case MOVH:
@@ -2628,7 +2636,7 @@ static uint32 cpu_read_op(operand * op)
             op->data = data;
             return data;
         case 6: /* Byte Immedaite */
-            data = op->embedded.b;
+            data = sign_extend_b(op->embedded.b);
             op->data = data;
             return data;
         }
