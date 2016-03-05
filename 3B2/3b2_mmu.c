@@ -24,6 +24,7 @@
    in this Software without prior written authorization from the author.
 */
 
+#include <assert.h>
 #include "3b2_mmu.h"
 
 #define BOOT_CODE_SIZE 0x8000
@@ -95,7 +96,7 @@ uint32 mmu_read(uint32 pa, uint8 size)
     uint32 offset;
     uint32 data = 0;
 
-    offset = (pa & 0xff) >> 2;
+    offset = (pa >> 2) & 0x1f;
 
     switch ((pa >> 8) & 0xf) {
     case MMU_SDCL:
@@ -179,7 +180,7 @@ void mmu_write(uint32 pa, uint32 val, uint8 size)
 {
     uint32 offset;
 
-    offset = (pa & 0xff) >> 2;
+    offset = (pa >> 2) & 0x1f;
 
     switch ((pa >> 8) & 0xf) {
     case MMU_SDCL:
@@ -335,8 +336,8 @@ uint32 pread_w_u(uint32 pa)
 uint32 pread_w(uint32 pa)
 {
     if (pa & 3) {
-        sim_debug(WRITE_MSG, &mmu_dev,
-                  "!!!! Cannot write physical address. ALIGNMENT ISSUE %08x\n", pa);
+        sim_debug(READ_MSG, &mmu_dev,
+                  "!!!! Cannot read physical address. ALIGNMENT ISSUE: %08x\n", pa);
         cpu_set_exception(NORMAL_EXCEPTION, EXTERNAL_MEMORY_FAULT);
     }
 
@@ -351,7 +352,7 @@ void pwrite_w(uint32 pa, uint32 val)
 
     if (pa & 3) {
         sim_debug(WRITE_MSG, &mmu_dev,
-                  "!!!! Cannot write physical address. ALIGNMENT ISSUE %08x\n", pa);
+                  "!!!! Cannot write physical address. ALIGNMENT ISSUE: %08x\n", pa);
         cpu_set_exception(NORMAL_EXCEPTION, EXTERNAL_MEMORY_FAULT);
     }
 
@@ -508,13 +509,84 @@ void pwrite_b(uint32 pa, uint8 val)
  * MMU Virtual Read and Write Functions
  */
 
-uint32 mmu_xlate_addr(uint32 addr)
+uint32 mmu_xlate_addr(uint32 vaddr)
 {
+    uint8 sid;
+    uint32 ssl, sdt, sdt_addr, sd_num, sd_addr, s_addr, p_addr, psl, pot, sot;
+    uint8 user_perm, super_perm, exec_perm, kern_perm;
+    t_bool present, contiguous, valid, indirect;
+    static uint32 sd[2];
+    static uint32 pd;
+
     if (!mmu_enabled()) {
-        return addr;
+        return vaddr;
     }
 
-    return addr;
+    sid = (vaddr >> 30) & 3;
+    ssl = (vaddr >> 17) & 0x1fff;
+
+    /* Find the SDT */
+    sdt_addr = mmu_state.sec[sid].addr;
+    sd_num = ssl;
+
+    sim_debug(EXECUTE_MSG, &mmu_dev,
+              ">> [PC=%08x] XLATE_CONTIGUOUS. vaddr=%08x, ",
+              R[NUM_PC], vaddr);
+
+    sd_addr = sdt_addr + (ssl * 4 * 2);
+
+    sd[0] = pread_w(sd_addr);
+    sd[1] = pread_w(sd_addr + 4);
+
+    present    = sd[0] & 1;
+    contiguous = (sd[0] >> 2) & 1;
+    valid      = (sd[0] >> 6) & 1;
+    indirect   = (sd[0] >> 7) & 1;
+
+    user_perm  = (sd[1] >> 24) & 3;
+    super_perm = (sd[1] >> 26) & 3;
+    exec_perm  = (sd[1] >> 28) & 3;
+    kern_perm  = (sd[1] >> 30) & 3;
+
+    sim_debug(EXECUTE_MSG, &mmu_dev,
+              "u=%d s=%d e=%d k=%d, ",
+              user_perm, super_perm, exec_perm, kern_perm);
+
+
+    /* TODO: Enforce permissions */
+
+    assert(present == 1);
+    assert(contiguous == 1);
+    assert(valid == 1);
+    /* TODO: Handle indirect */
+    assert(indirect == 0);
+
+    s_addr = sd[1] & 0xffffffe0;
+
+    /* Contiguous translation is straight-forward. */
+    if (contiguous) {
+        sot = (vaddr & 0x1ffff);
+        sim_debug(EXECUTE_MSG, &mmu_dev,
+                  "paddr=%08x\n",
+                  s_addr + sot);
+        return s_addr + sot;
+    }
+
+    /* Paged translation is more complex */
+    psl = (vaddr >> 11) & 0x3f;
+    pot = vaddr & 0x7ff;
+
+    /* The Page Descriptor lives in RAM at s_addr + psl */
+    pd = pread_w(s_addr + psl);
+
+    /* Upper 20 bits * 2K points at base of page */
+    p_addr = ((pd >> 10) & 0x3ffffff) * 0x800;
+
+    sim_debug(EXECUTE_MSG, &mmu_dev,
+              ">> [PC=%08x] XLATE_PAGED. vaddr=%08x, p_addr=%08x, pot=%08x, paddr=%08x\n",
+              R[NUM_PC], vaddr, p_addr, pot, p_addr + pot);
+
+    return p_addr + pot;
 }
 
 /*

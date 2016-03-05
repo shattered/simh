@@ -1177,8 +1177,8 @@ uint8 decode_instruction(instr *instr)
 
     if (mn->op_count < 0) {
         sim_debug(EXECUTE_MSG, &cpu_dev,
-                  ">>> [%08x]: Unable to decode instruction! mn=%s, op_count is -1.\n",
-                  R[NUM_PC], mn->mnemonic);
+                  ">>> [%08x]: Unable to decode instruction! opcode=%04x\n",
+                  R[NUM_PC], mn->opcode);
         cpu_set_exception(NORMAL_EXCEPTION, ILLEGAL_OPCODE);
         return offset;
     }
