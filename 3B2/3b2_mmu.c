@@ -529,11 +529,12 @@ uint32 mmu_xlate_addr(uint32 vaddr)
     sdt_addr = mmu_state.sec[sid].addr;
     sd_num = ssl;
 
-    sim_debug(EXECUTE_MSG, &mmu_dev,
-              ">> [PC=%08x] XLATE_CONTIGUOUS. vaddr=%08x, ",
-              R[NUM_PC], vaddr);
-
     sd_addr = sdt_addr + (ssl * 4 * 2);
+
+    sim_debug(EXECUTE_MSG, &mmu_dev,
+              ">> [PC=%08x] XLATE_CONTIGUOUS. vaddr=%08x, "
+              "sid=%d, sdt_addr=%08x, ssl=%05x, sd_addr=%08x, ",
+              R[NUM_PC], vaddr, sid, sdt_addr, ssl, sd_addr);
 
     sd[0] = pread_w(sd_addr);
     sd[1] = pread_w(sd_addr + 4);
@@ -543,15 +544,14 @@ uint32 mmu_xlate_addr(uint32 vaddr)
     valid      = (sd[0] >> 6) & 1;
     indirect   = (sd[0] >> 7) & 1;
 
-    user_perm  = (sd[1] >> 24) & 3;
-    super_perm = (sd[1] >> 26) & 3;
-    exec_perm  = (sd[1] >> 28) & 3;
-    kern_perm  = (sd[1] >> 30) & 3;
+    user_perm  = (sd[0] >> 24) & 3;
+    super_perm = (sd[0] >> 26) & 3;
+    exec_perm  = (sd[0] >> 28) & 3;
+    kern_perm  = (sd[0] >> 30) & 3;
 
     sim_debug(EXECUTE_MSG, &mmu_dev,
               "u=%d s=%d e=%d k=%d, ",
               user_perm, super_perm, exec_perm, kern_perm);
-
 
     /* TODO: Enforce permissions */
 
@@ -567,26 +567,14 @@ uint32 mmu_xlate_addr(uint32 vaddr)
     if (contiguous) {
         sot = (vaddr & 0x1ffff);
         sim_debug(EXECUTE_MSG, &mmu_dev,
-                  "paddr=%08x\n",
-                  s_addr + sot);
+                  "s_addr=%08x, sot=%08x, paddr=%08x\n",
+                  s_addr, sot, s_addr + sot);
         return s_addr + sot;
     }
 
-    /* Paged translation is more complex */
-    psl = (vaddr >> 11) & 0x3f;
-    pot = vaddr & 0x7ff;
+    assert(0);
 
-    /* The Page Descriptor lives in RAM at s_addr + psl */
-    pd = pread_w(s_addr + psl);
-
-    /* Upper 20 bits * 2K points at base of page */
-    p_addr = ((pd >> 10) & 0x3ffffff) * 0x800;
-
-    sim_debug(EXECUTE_MSG, &mmu_dev,
-              ">> [PC=%08x] XLATE_PAGED. vaddr=%08x, p_addr=%08x, pot=%08x, paddr=%08x\n",
-              R[NUM_PC], vaddr, p_addr, pot, p_addr + pot);
-
-    return p_addr + pot;
+    return 0;
 }
 
 /*
