@@ -512,7 +512,7 @@ void pwrite_b(uint32 pa, uint8 val)
 uint32 mmu_xlate_addr(uint32 vaddr)
 {
     uint8 sid;
-    uint32 ssl, sdt, sdt_addr, sd_num, sd_addr, s_addr, p_addr, psl, pot, sot;
+    uint32 ssl, sdt, sdt_addr, sd_num, sd_addr, s_addr, pd_addr, psl, pot, sot, page_base, page_addr;
     uint8 user_perm, super_perm, exec_perm, kern_perm;
     t_bool present, contiguous, valid, indirect;
     static uint32 sd[2];
@@ -531,11 +531,6 @@ uint32 mmu_xlate_addr(uint32 vaddr)
 
     sd_addr = sdt_addr + (ssl * 4 * 2);
 
-    sim_debug(EXECUTE_MSG, &mmu_dev,
-              ">> [PC=%08x] XLATE_CONTIGUOUS. vaddr=%08x, "
-              "sid=%d, sdt_addr=%08x, ssl=%05x, sd_addr=%08x, ",
-              R[NUM_PC], vaddr, sid, sdt_addr, ssl, sd_addr);
-
     sd[0] = pread_w(sd_addr);
     sd[1] = pread_w(sd_addr + 4);
 
@@ -549,14 +544,9 @@ uint32 mmu_xlate_addr(uint32 vaddr)
     exec_perm  = (sd[0] >> 28) & 3;
     kern_perm  = (sd[0] >> 30) & 3;
 
-    sim_debug(EXECUTE_MSG, &mmu_dev,
-              "u=%d s=%d e=%d k=%d, ",
-              user_perm, super_perm, exec_perm, kern_perm);
-
     /* TODO: Enforce permissions */
 
     assert(present == 1);
-    assert(contiguous == 1);
     assert(valid == 1);
     /* TODO: Handle indirect */
     assert(indirect == 0);
@@ -567,14 +557,27 @@ uint32 mmu_xlate_addr(uint32 vaddr)
     if (contiguous) {
         sot = (vaddr & 0x1ffff);
         sim_debug(EXECUTE_MSG, &mmu_dev,
-                  "s_addr=%08x, sot=%08x, paddr=%08x\n",
-                  s_addr, sot, s_addr + sot);
+                  ">> [PC=%08x] XLATE_CONTIGUOUS. vaddr=%08x, p_addr = %08x\n",
+                  R[NUM_PC], vaddr, s_addr + sot);
         return s_addr + sot;
     }
 
-    assert(0);
+    /* If it's not contiguous, we need to do paged translation */
 
-    return 0;
+    psl = (vaddr >> 11) & 0x3f;
+    pot = vaddr & 0x7ff;
+    pd_addr = s_addr + (psl * 4);
+
+    /* Grab the page descriptor */
+    pd = pread_w(pd_addr);
+
+    page_base = pd & 0xffe00000;
+
+    sim_debug(EXECUTE_MSG, &mmu_dev,
+              ">> [PC=%08x] XLATE_PAGED. vaddr=%08x, p_addr = %08x\n",
+              R[NUM_PC], vaddr, page_base + pot);
+
+    return page_base + pot;
 }
 
 /*
