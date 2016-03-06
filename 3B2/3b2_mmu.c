@@ -149,15 +149,11 @@ uint32 mmu_read(uint32 pa, uint8 size)
         break;
     case MMU_FC:
         data = mmu_state.fcode;
-        sim_debug(READ_MSG, &mmu_dev,
-                  "MMU_FC[%d] = %08x\n",
-                  offset, data);
+        sim_debug(READ_MSG, &mmu_dev, "MMU_FAULT_CODE = %08x\n", data);
         break;
     case MMU_FA:
         data = mmu_state.faddr;
-        sim_debug(READ_MSG, &mmu_dev,
-                  "MMU_FA[%d] = %08x\n",
-                  offset, data);
+        sim_debug(READ_MSG, &mmu_dev, "MMU_FAULT_ADDR = %08x\n", data);
         break;
     case MMU_CONF:
         data = mmu_state.conf;
@@ -168,8 +164,8 @@ uint32 mmu_read(uint32 pa, uint8 size)
     case MMU_VAR:
         data = mmu_state.var;
         sim_debug(READ_MSG, &mmu_dev,
-                  "MMU_VAR[%d] = %08x\n",
-                  offset, data);
+                  "[PC=%08x] MMU_VAR = %08x\n",
+                  R[NUM_PC], data);
         break;
     }
 
@@ -236,14 +232,14 @@ void mmu_write(uint32 pa, uint32 val, uint8 size)
     case MMU_FC:
         mmu_state.fcode = val;
         sim_debug(WRITE_MSG, &mmu_dev,
-                  "MMU_FC[%d] = %08x\n",
-                  offset, val);
+                  "MMU_FAULT_CODE = %08x\n",
+                  val);
         break;
     case MMU_FA:
         mmu_state.faddr = val;
         sim_debug(WRITE_MSG, &mmu_dev,
-                  "MMU_FA[%d] = %08x\n",
-                  offset, val);
+                  "MMU_FAULT_ADDRESS = %08x\n",
+                  val);
         break;
     case MMU_CONF:
         mmu_state.conf = val;
@@ -254,8 +250,8 @@ void mmu_write(uint32 pa, uint32 val, uint8 size)
     case MMU_VAR:
         mmu_state.var = val;
         sim_debug(WRITE_MSG, &mmu_dev,
-                  "MMU_VAR[%d] = %08x\n",
-                  offset, val);
+                  "[PC=%08x] MMU_VAR = %08x\n",
+                  R[NUM_PC], val);
         break;
     }
 }
@@ -517,16 +513,20 @@ uint32 mmu_xlate_addr(uint32 vaddr)
     t_bool present, contiguous, valid, indirect;
     static uint32 sd[2];
     static uint32 pd;
-
     if (!mmu_enabled()) {
         return vaddr;
     }
+
+
+    mmu_state.fcode = 0;
+    mmu_state.faddr = 0;
 
     sid = (vaddr >> 30) & 3;
     ssl = (vaddr >> 17) & 0x1fff;
 
     /* Find the SDT */
     sdt_addr = mmu_state.sec[sid].addr;
+
     sd_num = ssl;
 
     sd_addr = sdt_addr + (ssl * 4 * 2);
@@ -545,7 +545,6 @@ uint32 mmu_xlate_addr(uint32 vaddr)
     kern_perm  = (sd[0] >> 30) & 3;
 
     /* TODO: Enforce permissions */
-
     assert(present == 1);
     assert(valid == 1);
     /* TODO: Handle indirect */
@@ -555,27 +554,52 @@ uint32 mmu_xlate_addr(uint32 vaddr)
 
     /* Contiguous translation is straight-forward. */
     if (contiguous) {
+        if (!present) {
+            sim_debug(EXECUTE_MSG, &mmu_dev,
+                      ">> [PC=%08x] SEGMENT NOT PRESENT.\n", R[NUM_PC]);
+            cpu_set_exception(NORMAL_EXCEPTION, EXTERNAL_MEMORY_FAULT);
+            mmu_state.fcode = 7;
+            mmu_state.faddr = vaddr;
+            return 0;
+        }
+
         sot = (vaddr & 0x1ffff);
+        /*
         sim_debug(EXECUTE_MSG, &mmu_dev,
                   ">> [PC=%08x] XLATE_CONTIGUOUS. vaddr=%08x, p_addr = %08x\n",
                   R[NUM_PC], vaddr, s_addr + sot);
+        */
         return s_addr + sot;
     }
 
-    /* If it's not contiguous, we need to do paged translation */
+    /* If it's not contiguous, we need to do paged translation. At
+       this point, s_addr points to the bottom of the page descriptor
+       table that we want to look at */
 
     psl = (vaddr >> 11) & 0x3f;
-    pot = vaddr & 0x7ff;
     pd_addr = s_addr + (psl * 4);
 
     /* Grab the page descriptor */
     pd = pread_w(pd_addr);
 
-    page_base = pd & 0xffe00000;
+    present = pd & 1;
+
+    if (!present) {
+        /* TODO: Deal with this */
+        sim_debug(EXECUTE_MSG, &mmu_dev,
+                  ">> [PC=%08x] PAGE NOT PRESENT. pd=%08x\n", R[NUM_PC], pd);
+    }
+
+    page_base = pd & 0xfffff800;
+
+    page_base = page_base;
+
+    pot = vaddr & 0x7ff;
 
     sim_debug(EXECUTE_MSG, &mmu_dev,
-              ">> [PC=%08x] XLATE_PAGED. vaddr=%08x, p_addr = %08x\n",
-              R[NUM_PC], vaddr, page_base + pot);
+              ">> [PC=%08x] XLATE_PAGED. vaddr=%08x, s_addr=%08x, psl=%08x, pot=%08x, pd_addr=%08x, pd=%08x, page_base=%08x, p_addr = %08x\n",
+              R[NUM_PC], vaddr, s_addr, psl, pot, pd_addr, pd, page_base, page_base  + pot);
+
 
     return page_base + pot;
 }

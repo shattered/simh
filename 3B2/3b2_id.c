@@ -1,4 +1,4 @@
-/* 3b2_cpu.h: AT&T 3B2 Model 400 Hard Disk (2797) Implementation
+/* 3b2_cpu.h: AT&T 3B2 Model 400 Hard Disk (uPD7261) Implementation
 
    Copyright (c) 2015, Seth J. Morabito
 
@@ -90,6 +90,9 @@ uint32 id_read(uint32 pa, uint8 size) {
     case 1:     /* Status Register */
         data = id_state.status;
         sim_debug(READ_MSG, &id_dev, ">>> READ STATUS %02x\n", data);
+
+        /* XXX HACK: Try to set the SEQ bit after a read */
+        id_state.status |= ID_STAT_SRQ;
         break;
     }
 

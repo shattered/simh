@@ -1838,6 +1838,16 @@ t_stat sim_instr(void)
             mmu_enable();
             R[NUM_PC] = R[0];
             continue;
+        case DISVJMP:
+            sim_debug(EXECUTE_MSG, &cpu_dev,
+                      ">>> DISVJMP -- Disabling MMU. R0=%04x\n", R[0]);
+            if (cpu_execution_level() != EX_LVL_KERN) {
+                cpu_set_exception(NORMAL_EXCEPTION, PRIVILEGED_OPCODE);
+                break;
+            }
+            mmu_disable();
+            R[NUM_PC] = R[0];
+            continue;
         case EXTFW:
         case EXTFH:
         case EXTFB:
