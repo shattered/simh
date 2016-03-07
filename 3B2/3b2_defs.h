@@ -32,6 +32,9 @@
 #define FALSE 0
 #define TRUE 1
 
+/* -v flag for examine routine */
+#define EX_V_FLAG 1 << 21
+
 #define MAX_HIST_SIZE  50000
 #define DEF_HIST_SIZE  100
 #define MAXMEMSIZE	   (1 << 22)             /* 4 MB */

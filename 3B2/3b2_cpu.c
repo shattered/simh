@@ -546,11 +546,15 @@ t_stat cpu_ex(t_value *vptr, t_addr addr, UNIT *uptr, int32 sw)
         return SCPE_ARG;
     }
 
-    if (!(addr_is_rom(uaddr) || addr_is_mem(uaddr) || addr_is_io(uaddr))) {
-        return SCPE_NXM;
-    }
+    if (sw & EX_V_FLAG) {
+        *vptr = (uint32) read_b(uaddr);
+    } else {
+        if (!(addr_is_rom(uaddr) || addr_is_mem(uaddr) || addr_is_io(uaddr))) {
+            return SCPE_NXM;
+        }
 
-    *vptr = (uint32) pread_b(uaddr);
+        *vptr = (uint32) pread_b(uaddr);
+    }
 
     return SCPE_OK;
 }
@@ -1994,8 +1998,11 @@ t_stat sim_instr(void)
             cpu_set_nz_flags(a, src1);
             break;
         case MOVTRW:
-            a = cpu_read_op(src1);
+            a = cpu_effective_address(src1);
             result = mmu_xlate_addr(a);
+            sim_debug(EXECUTE_MSG, &cpu_dev,
+                      "MOVTRW: input=%08x, output=%08x\n",
+                      (uint32)a, (uint32)result);
             cpu_write_op(dst, result);
             cpu_set_nz_flags(result, dst);
             cpu_set_v_flag(0);

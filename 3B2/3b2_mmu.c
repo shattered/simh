@@ -508,7 +508,7 @@ void pwrite_b(uint32 pa, uint8 val)
 uint32 mmu_xlate_addr(uint32 vaddr)
 {
     uint8 sid;
-    uint32 ssl, sdt, sdt_addr, sd_num, sd_addr, s_addr, pd_addr, psl, pot, sot, page_base, page_addr;
+    uint32 ssl, sdt, sdt_addr, sd_addr, s_addr, pd_addr, psl, pot, sot, page_base, page_addr;
     uint8 user_perm, super_perm, exec_perm, kern_perm;
     t_bool present, contiguous, valid, indirect;
     static uint32 sd[2];
@@ -516,7 +516,6 @@ uint32 mmu_xlate_addr(uint32 vaddr)
     if (!mmu_enabled()) {
         return vaddr;
     }
-
 
     mmu_state.fcode = 0;
     mmu_state.faddr = 0;
@@ -526,8 +525,6 @@ uint32 mmu_xlate_addr(uint32 vaddr)
 
     /* Find the SDT */
     sdt_addr = mmu_state.sec[sid].addr;
-
-    sd_num = ssl;
 
     sd_addr = sdt_addr + (ssl * 4 * 2);
 
@@ -564,11 +561,7 @@ uint32 mmu_xlate_addr(uint32 vaddr)
         }
 
         sot = (vaddr & 0x1ffff);
-        /*
-        sim_debug(EXECUTE_MSG, &mmu_dev,
-                  ">> [PC=%08x] XLATE_CONTIGUOUS. vaddr=%08x, p_addr = %08x\n",
-                  R[NUM_PC], vaddr, s_addr + sot);
-        */
+
         return s_addr + sot;
     }
 
@@ -585,23 +578,18 @@ uint32 mmu_xlate_addr(uint32 vaddr)
     present = pd & 1;
 
     if (!present) {
-        /* TODO: Deal with this */
         sim_debug(EXECUTE_MSG, &mmu_dev,
                   ">> [PC=%08x] PAGE NOT PRESENT. pd=%08x\n", R[NUM_PC], pd);
+        cpu_set_exception(NORMAL_EXCEPTION, EXTERNAL_MEMORY_FAULT);
+        mmu_state.fcode = 7;
+        mmu_state.faddr = vaddr;
+        return 0;
     }
 
     page_base = pd & 0xfffff800;
-
-    page_base = page_base;
-
     pot = vaddr & 0x7ff;
 
-    sim_debug(EXECUTE_MSG, &mmu_dev,
-              ">> [PC=%08x] XLATE_PAGED. vaddr=%08x, s_addr=%08x, psl=%08x, pot=%08x, pd_addr=%08x, pd=%08x, page_base=%08x, p_addr = %08x\n",
-              R[NUM_PC], vaddr, s_addr, psl, pot, pd_addr, pd, page_base, page_base  + pot);
-
-
-    return page_base + pot;
+    return page_base | pot;
 }
 
 /*
