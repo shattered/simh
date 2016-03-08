@@ -313,7 +313,7 @@ uint32 nvram_read(uint32 pa, size_t size)
         break;
     }
 
-    sim_debug(READ_MSG, &nvram_dev, "NVRAM READ %d B @ %08x = %08x\n",
+    sim_debug(READ_MSG, &nvram_dev, "NVRAM READ %lu B @ %08x = %08x\n",
               size, pa, data);
 
     return data;
@@ -325,7 +325,7 @@ void nvram_write(uint32 pa, uint32 val, size_t size)
     uint32 index = offset >> 2;
     uint32 sc, mask;
 
-    sim_debug(WRITE_MSG, &nvram_dev, "NVRAM WRITE %d B @ %08x=%08x\n",
+    sim_debug(WRITE_MSG, &nvram_dev, "NVRAM WRITE %lu B @ %08x=%08x\n",
               size, pa, val);
 
     switch(size) {

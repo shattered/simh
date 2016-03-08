@@ -56,7 +56,7 @@ uint32 dmac_read(uint32 pa, size_t size)
      * from the DMA controller. It is effectively write-only.
      */
 
-    sim_debug(READ_MSG, &dmac_dev, "[%08x] DMAC READ %d B @ %08x\n",
+    sim_debug(READ_MSG, &dmac_dev, "[%08x] DMAC READ %lu B @ %08x\n",
               R[NUM_PC], size, pa);
 
     return 0;
