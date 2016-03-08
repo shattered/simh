@@ -314,10 +314,10 @@ typedef struct {
     op_mode mode;        /* Dispatch mode      */
     int8    dtype;       /* Default data type  */
     char    mnemonic[8];
-    uint8   src_op1;
-    uint8   src_op2;
-    uint8   src_op3;
-    uint8   dst_op;
+    int8    src_op1;
+    int8    src_op2;
+    int8    src_op3;
+    int8    dst_op;
 } mnemonic;
 
 /*
@@ -363,7 +363,7 @@ t_stat cpu_clear_halt(UNIT *uptr, int32 val, char *cptr, void *desc);
 t_stat cpu_boot(int32 unit_num, DEVICE *dptr);
 t_bool cpu_is_pc_a_subroutine_call (t_addr **ret_addrs);
 
-void cpu_register_name(uint8 reg, char *buf, int8 len);
+void cpu_register_name(uint8 reg, char *buf, size_t len);
 void cpu_show_operand(FILE *st, operand *op);
 void fprint_sym_m(FILE *st, instr *ip);
 

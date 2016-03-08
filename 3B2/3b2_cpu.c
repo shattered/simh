@@ -29,6 +29,8 @@
 #include "3b2_cpu.h"
 #include "rom_400_bin.h"
 
+#define MAX_SUB_RETURN_SKIP 9
+
 /* RO memory. */
 uint32 *ROM = NULL;
 
@@ -474,8 +476,7 @@ const uint32 m68ki_shift_32_table[65] =
 
 void cpu_load_rom()
 {
-    uint32 i;
-    int32 index, sc, mask, val;
+    uint32 i, index, sc, mask, val;
 
     if (ROM == NULL) {
         return;
@@ -484,7 +485,7 @@ void cpu_load_rom()
     for (i = 0; i < BOOT_CODE_SIZE; i++) {
         val = BOOT_CODE_ARRAY[i];
         sc = (~(i & 3) << 3) & 0x1f;
-        mask = 0xff << sc;
+        mask = 0xffu << sc;
         index = i >> 2;
 
         ROM[index] = (ROM[index] & ~mask) | (val << sc);
@@ -567,7 +568,7 @@ t_stat cpu_dep(t_value val, t_addr addr, UNIT *uptr, int32 sw)
         return SCPE_NXM;
     }
 
-    pwrite_b(addr, (int32) val);
+    pwrite_b(addr, (uint8) val);
 
     return SCPE_OK;
 }
@@ -626,26 +627,32 @@ static const char *cpu_next_caveats =
 
 t_bool cpu_is_pc_a_subroutine_call (t_addr **ret_addrs)
 {
-#define MAX_SUB_RETURN_SKIP 9
-static t_addr returns[MAX_SUB_RETURN_SKIP+1] = {0};
-static t_bool caveats_displayed = FALSE;
-int i;
-
-if (!caveats_displayed) {
-    caveats_displayed = TRUE;
-    sim_printf ("%s", cpu_next_caveats);
+    static uint32 returns[MAX_SUB_RETURN_SKIP+1] = {0};
+    static t_bool caveats_displayed = FALSE;
+    int i;
+    
+    if (!caveats_displayed) {
+        caveats_displayed = TRUE;
+        sim_printf ("%s", cpu_next_caveats);
     }
-if (SCPE_OK != get_aval (R[NUM_PC], &cpu_dev, &cpu_unit))  /* get data */
-    return FALSE;
-switch (sim_eval[0])
-    {
+
+    /* get data */
+    if (SCPE_OK != get_aval (R[NUM_PC], &cpu_dev, &cpu_unit)) {
+        return FALSE;
+    }
+
+    switch (sim_eval[0]) {
     case JSB:
     case CALL:
     case CALLPS:
-        returns[0] = R[NUM_PC] + (1 - fprint_sym (stdnul, R[NUM_PC], sim_eval, &cpu_unit, SWMASK ('M')));
-        for (i=1; i<MAX_SUB_RETURN_SKIP; i++)
-            returns[i] = returns[i-1] + 1;      /* Possible skip return */
-        returns[i] = 0;                         /* Make sure the address list ends with a zero */
+        returns[0] = R[NUM_PC] + (1 - fprint_sym(stdnul, R[NUM_PC],
+                                                 sim_eval, &cpu_unit,
+                                                 SWMASK ('M')));
+        for (i=1; i<MAX_SUB_RETURN_SKIP; i++) {
+            /* Possible skip return */
+            returns[i] = returns[i-1] + 1;     
+        }
+        returns[i] = 0;  /* Make sure the address list ends with a zero */
         *ret_addrs = returns;
         return TRUE;
     default:
@@ -673,7 +680,7 @@ t_stat cpu_set_hist(UNIT *uptr, int32 val, char *cptr, void *desc)
     instr *nINST = NULL;
 
     if (cptr) {
-        size = (int32) get_uint(cptr, 10, MAX_HIST_SIZE, &result);
+        size = (uint32) get_uint(cptr, 10, MAX_HIST_SIZE, &result);
         if ((result != SCPE_OK) || (size == 0)) {
             return SCPE_ARG;
         }
@@ -722,8 +729,7 @@ void fprint_sym_m(FILE *st, instr *ip)
 
 t_stat cpu_show_hist(FILE *st, UNIT *uptr, int32 val, void *desc)
 {
-    int32 i, j;
-    int32 count;
+    uint32 i, j, count;
     char *cptr = (char *) desc;
     t_stat result;
     instr *ip;
@@ -731,7 +737,7 @@ t_stat cpu_show_hist(FILE *st, UNIT *uptr, int32 val, void *desc)
     /* 'count' is the number of history entries the user wants */
 
     if (cptr) {
-        count = (int32) get_uint(cptr, 10, cpu_history_size, &result);
+        count = (uint32) get_uint(cptr, 10, cpu_history_size, &result);
         if ((result != SCPE_OK) || (count == 0)) {
             return SCPE_ARG;
         }
@@ -756,7 +762,7 @@ t_stat cpu_show_hist(FILE *st, UNIT *uptr, int32 val, void *desc)
             break;
         }
 
-        instr *ip = &INST[i];
+        ip = &INST[i];
 
         /* Show the opcode mnemonic */
         fprintf(st, "%08x %08x| ", ip->psw, ip->pc);
@@ -786,7 +792,7 @@ t_stat cpu_show_hist(FILE *st, UNIT *uptr, int32 val, void *desc)
     return SCPE_OK;
 }
 
-void cpu_register_name(uint8 reg, char *buf, int8 len) {
+void cpu_register_name(uint8 reg, char *buf, size_t len) {
     switch(reg) {
     case 9:
         snprintf(buf, len, "%%fp");
@@ -1014,10 +1020,10 @@ static uint8 decode_operand(uint32 pa, instr *instr, uint8 op_number)
     case 4:  /* Word Immediate, Register Mode */
         switch (oper->reg) {
         case 15: /* Word Immediate */
-            oper->embedded.w = read_b(pa + offset++);
-            oper->embedded.w |= read_b(pa + offset++) << 8;
-            oper->embedded.w |= read_b(pa + offset++) << 16;
-            oper->embedded.w |= read_b(pa + offset++) << 24;
+            oper->embedded.w = (uint32) read_b(pa + offset++);
+            oper->embedded.w |= ((uint32) read_b(pa + offset++)) << 8u;
+            oper->embedded.w |= ((uint32) read_b(pa + offset++)) << 16u;
+            oper->embedded.w |= ((uint32) read_b(pa + offset++)) << 24u;
             break;
         default: /* Register mode */
             break;
@@ -1026,8 +1032,8 @@ static uint8 decode_operand(uint32 pa, instr *instr, uint8 op_number)
     case 5: /* Halfword Immediate, Register Deferred Mode */
         switch (oper->reg) {
         case 15: /* Halfword Immediate */
-            oper->embedded.h = read_b(pa + offset++);
-            oper->embedded.h |= read_b(pa + offset++) << 8;
+            oper->embedded.h = (uint16) read_b(pa + offset++);
+            oper->embedded.h |= ((uint16) read_b(pa + offset++)) << 8u;
             break;
         case 11: /* INVALID */
             /* TODO: Confirm that INVALID_DESCRIPTOR is correct. */
@@ -1051,10 +1057,10 @@ static uint8 decode_operand(uint32 pa, instr *instr, uint8 op_number)
     case 7: /* Absolute, AP Short Offset */
         switch (oper->reg) {
         case 15: /* Absolute */
-            oper->embedded.w = read_b(pa + offset++);
-            oper->embedded.w |= read_b(pa + offset++) << 8;
-            oper->embedded.w |= read_b(pa + offset++) << 16;
-            oper->embedded.w |= read_b(pa + offset++) << 24;
+            oper->embedded.w = (uint32) read_b(pa + offset++);
+            oper->embedded.w |= ((uint32) read_b(pa + offset++)) << 8u;
+            oper->embedded.w |= ((uint32) read_b(pa + offset++)) << 16u;
+            oper->embedded.w |= ((uint32) read_b(pa + offset++)) << 24u;
             break;
         default: /* AP Short Offset */
             oper->embedded.b = oper->reg;
@@ -1063,15 +1069,15 @@ static uint8 decode_operand(uint32 pa, instr *instr, uint8 op_number)
         break;
     case 8: /* Word Displacement */
     case 9: /* Word Displacement Deferred */
-        oper->embedded.w = read_b(pa + offset++);
-        oper->embedded.w |= read_b(pa + offset++) << 8;
-        oper->embedded.w |= read_b(pa + offset++) << 16;
-        oper->embedded.w |= read_b(pa + offset++) << 24;
+        oper->embedded.w = (uint32) read_b(pa + offset++);
+        oper->embedded.w |= ((uint32) read_b(pa + offset++)) << 8u;
+        oper->embedded.w |= ((uint32) read_b(pa + offset++)) << 16u;
+        oper->embedded.w |= ((uint32) read_b(pa + offset++)) << 24u;
         break;
     case 10: /* Halfword Displacement */
     case 11: /* Halfword Displacement Deferred */
         oper->embedded.h = read_b(pa + offset++);
-        oper->embedded.h |= read_b(pa + offset++) << 8;
+        oper->embedded.h |= ((uint16) read_b(pa + offset++)) << 8u;
         break;
     case 12: /* Byte Displacement */
     case 13: /* Byte Displacement Deferred */
@@ -1080,10 +1086,10 @@ static uint8 decode_operand(uint32 pa, instr *instr, uint8 op_number)
     case 14: /* Absolute Deferred, Extended-Operand */
         switch (oper->reg) {
         case 15: /* Absolute Deferred */
-            oper->embedded.w = read_b(pa + offset++);
-            oper->embedded.w |= read_b(pa + offset++) << 8;
-            oper->embedded.w |= read_b(pa + offset++) << 16;
-            oper->embedded.w |= read_b(pa + offset++) << 24;
+            oper->embedded.w = (uint32) read_b(pa + offset++);
+            oper->embedded.w |= ((uint32) read_b(pa + offset++)) << 8;
+            oper->embedded.w |= ((uint32) read_b(pa + offset++)) << 16;
+            oper->embedded.w |= ((uint32) read_b(pa + offset++)) << 24;
             break;
         case 0:
         case 2:
@@ -1093,7 +1099,7 @@ static uint8 decode_operand(uint32 pa, instr *instr, uint8 op_number)
         case 7: /* Expanded Datatype */
             /* Recursively decode the remainder of the operand after
                storing the expanded datatype */
-            cpu_etype = oper->reg;
+            cpu_etype = (int8) oper->reg;
             oper->etype = cpu_etype;
             offset += decode_operand(pa + offset, instr, op_number);
             break;

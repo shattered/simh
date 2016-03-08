@@ -37,8 +37,8 @@
 
 #define MAX_HIST_SIZE  50000
 #define DEF_HIST_SIZE  100
-#define MAXMEMSIZE	   (1 << 22)             /* 4 MB */
-#define MEM_SIZE       (cpu_unit.capac)		 /* actual memory size */
+#define MAXMEMSIZE     (1 << 22)             /* 4 MB */
+#define MEM_SIZE       (cpu_unit.capac)      /* actual memory size */
 #define UNIT_V_MSIZE   (UNIT_V_UF)
 
 #define UNIT_MSIZE     (1 << UNIT_V_MSIZE)
@@ -163,24 +163,24 @@
 #define PSW_QIE               24
 #define PSW_CFD               25
 
-#define PSW_ET_MASK            3
-#define PSW_TM_MASK           (1 << PSW_TM)
-#define PSW_ISC_MASK          (15 << PSW_ISC)
-#define PSW_RI_MASK           (3 << PSW_RI)
-#define PSW_I_MASK            (1 << PSW_RI)
-#define PSW_R_MASK            (1 << (PSW_RI + 1))
-#define PSW_PM_MASK           (3 << PSW_PM)
-#define PSW_CM_MASK           (3 << PSW_CM)
-#define PSW_IPL_MASK          (15 << PSW_IPL)
-#define PSW_TE_MASK           (1 << PSW_TE)
-#define PSW_C_MASK            (1 << PSW_C)
-#define PSW_V_MASK            (1 << PSW_V)
-#define PSW_N_MASK            (1 << PSW_N)
-#define PSW_Z_MASK            (1 << PSW_Z)
-#define PSW_OE_MASK           (1 << PSW_OE)
-#define PSW_CD_MASK           (1 << PSW_CD)
-#define PSW_QIE_MASK          (1 << PSW_QIE)
-#define PSW_CFD_MASK          (1 << PSW_CFD)
+#define PSW_ET_MASK            3u
+#define PSW_TM_MASK           (1u << PSW_TM)
+#define PSW_ISC_MASK          (15u << PSW_ISC)
+#define PSW_RI_MASK           (3u << PSW_RI)
+#define PSW_I_MASK            (1u << PSW_RI)
+#define PSW_R_MASK            (1u << (PSW_RI + 1))
+#define PSW_PM_MASK           (3u << PSW_PM)
+#define PSW_CM_MASK           (3u << PSW_CM)
+#define PSW_IPL_MASK          (15u << PSW_IPL)
+#define PSW_TE_MASK           (1u << PSW_TE)
+#define PSW_C_MASK            (1u << PSW_C)
+#define PSW_V_MASK            (1u << PSW_V)
+#define PSW_N_MASK            (1u << PSW_N)
+#define PSW_Z_MASK            (1u << PSW_Z)
+#define PSW_OE_MASK           (1u << PSW_OE)
+#define PSW_CD_MASK           (1u << PSW_CD)
+#define PSW_QIE_MASK          (1u << PSW_QIE)
+#define PSW_CFD_MASK          (1u << PSW_CFD)
 
 
 /* global symbols from the CPU */

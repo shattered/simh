@@ -508,7 +508,7 @@ void pwrite_b(uint32 pa, uint8 val)
 uint32 mmu_xlate_addr(uint32 vaddr)
 {
     uint8 sid;
-    uint32 ssl, sdt, sdt_addr, sd_addr, s_addr, pd_addr, psl, pot, sot, page_base, page_addr;
+    uint32 ssl, sdt, sdt_addr, sd_addr, seg_addr, pd_addr, psl, pot, sot, page_base, page_addr;
     uint8 user_perm, super_perm, exec_perm, kern_perm;
     t_bool present, contiguous, valid, indirect;
     static uint32 sd[2];
@@ -547,7 +547,7 @@ uint32 mmu_xlate_addr(uint32 vaddr)
     /* TODO: Handle indirect */
     assert(indirect == 0);
 
-    s_addr = sd[1] & 0xffffffe0;
+    seg_addr = sd[1] & 0xffffffe0;
 
     /* Contiguous translation is straight-forward. */
     if (contiguous) {
@@ -562,15 +562,15 @@ uint32 mmu_xlate_addr(uint32 vaddr)
 
         sot = (vaddr & 0x1ffff);
 
-        return s_addr + sot;
+        return seg_addr + sot;
     }
 
     /* If it's not contiguous, we need to do paged translation. At
-       this point, s_addr points to the bottom of the page descriptor
+       this point, seg_addr points to the bottom of the page descriptor
        table that we want to look at */
 
     psl = (vaddr >> 11) & 0x3f;
-    pd_addr = s_addr + (psl * 4);
+    pd_addr = seg_addr + (psl * 4);
 
     /* Grab the page descriptor */
     pd = pread_w(pd_addr);

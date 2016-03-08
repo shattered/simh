@@ -1659,6 +1659,12 @@ ${BIN}b5500${EXE} : ${B5500} ${SIM}
 	${MKDIRBIN}
 	${CC} ${B5500} ${SIM} ${B5500_OPT} $(CC_OUTSPEC) ${LDFLAGS}
 
+3b2 : ${BIN}3b2${EXE}
+
+${BIN}3b2${EXE} : ${3B2} ${SIM}
+	${MKDIRBIN}
+	${CC} ${3B2} ${SIM} ${3B2_OPT} $(CC_OUTSPEC) ${LDFLAGS}
+
 # Front Panel API Demo/Test program
 
 frontpaneltest : ${BIN}frontpaneltest${EXE}
@@ -1666,10 +1672,3 @@ frontpaneltest : ${BIN}frontpaneltest${EXE}
 ${BIN}frontpaneltest${EXE} : frontpanel/FrontPanelTest.c sim_sock.c sim_frontpanel.c
 	${MKDIRBIN}
 	${CC} frontpanel/FrontPanelTest.c sim_sock.c sim_frontpanel.c $(CC_OUTSPEC) ${LDFLAGS}
-
-3b2 : ${BIN}3b2${EXE}
-
-${BIN}3b2${EXE} : ${3B2} ${SIM}
-	${MKDIRBIN}
-	${CC} ${3B2} ${SIM} ${3B2_OPT} $(CC_OUTSPEC) ${LDFLAGS}
-
