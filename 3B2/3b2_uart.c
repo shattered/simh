@@ -162,7 +162,7 @@ t_stat uart_svc(UNIT *uptr)
  *     15  | Stop Counter Command    | Reset Output Port Bits Cmd.
  */
 
-uint32 uart_read(uint32 pa, uint8 size)
+uint32 uart_read(uint32 pa, size_t size)
 {
     uint8 reg;
     uint32 data;
@@ -223,7 +223,7 @@ uint32 uart_read(uint32 pa, uint8 size)
     return data;
 }
 
-void uart_write(uint32 pa, uint32 val, uint8 size)
+void uart_write(uint32 pa, uint32 val, size_t size)
 {
     uint8 reg;
     uint8 mode_ptr;
@@ -319,8 +319,6 @@ static SIM_INLINE void uart_update_txi()
 
 static SIM_INLINE void uart_update_rxi(uint8 c)
 {
-    t_stat result;
-
     if (u.port[PORT_A].cmd & CMD_ERX) {
         if (((u.port[PORT_A].stat & STS_RXR) == 0)) {
             u.port[PORT_A].buf = c;

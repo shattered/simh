@@ -44,7 +44,7 @@ struct iolink iotable[] = {
     { 0, 0, NULL, NULL}
 };
 
-uint32 io_read(uint32 pa, uint8 size)
+uint32 io_read(uint32 pa, size_t size)
 {
     struct iolink *p;
 
@@ -108,12 +108,12 @@ uint32 io_read(uint32 pa, uint8 size)
     return 0;
 }
 
-void io_write(int32 pa, int32 val, uint8 size)
+void io_write(uint32 pa, uint32 val, size_t size)
 {
     struct iolink *p;
 
     /* IO Board Area - Unimplemented */
-    if (pa >= 0x200000 && pa < 0x2000000) {
+    if (pa >= 0x200000u && pa < 0x2000000u) {
         sim_debug(IO_D_MSG, &cpu_dev, "[IO BOARD WRITE] ADDR=%08x, DATA=%08x\n", pa, val);
         return;
     }

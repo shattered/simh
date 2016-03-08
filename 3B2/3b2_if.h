@@ -109,8 +109,8 @@ extern IF_STATE if_state;
 t_stat if_svc(UNIT *uptr);
 t_stat if_reset(DEVICE *dptr);
 t_stat if_boot(int32 unitno, DEVICE *dptr);
-uint32 if_read(uint32 pa, uint8 size);
-void if_write(uint32 pa, uint32 val, uint8 size);
+uint32 if_read(uint32 pa, size_t size);
+void if_write(uint32 pa, uint32 val, size_t size);
 void if_drq_handled();
 
 #endif

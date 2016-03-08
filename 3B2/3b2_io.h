@@ -38,8 +38,8 @@
 struct iolink {
     uint32      low;
     uint32      high;
-    uint32      (*read)(uint32 pa, uint8 size);
-    void        (*write)(uint32 pa, uint32 val, uint8 size);
+    uint32      (*read)(uint32 pa, size_t size);
+    void        (*write)(uint32 pa, uint32 val, size_t size);
 };
 
 #endif

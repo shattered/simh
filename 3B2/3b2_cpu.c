@@ -773,9 +773,9 @@ t_stat cpu_show_hist(FILE *st, UNIT *uptr, int32 val, void *desc)
         if (ip->mn->op_count > 0 && ip->mn->mode == OP_DESC) {
             fprintf(st, "\n                   ");
 
-            for (j = 0; j < ip->mn->op_count; j++) {
+            for (j = 0; j < (uint32) ip->mn->op_count; j++) {
                 fprintf(st, "%08x", ip->operands[j].data);
-                if (j < ip->mn->op_count - 1) {
+                if (j < (uint32) ip->mn->op_count - 1) {
                     fputc(' ', st);
                 }
             }
@@ -1568,13 +1568,13 @@ t_stat sim_instr(void)
             }
             break;
         case BGEH:
-            if (cpu_n_flag() == 0 | cpu_z_flag() == 1) {
+            if ((cpu_n_flag() == 0) | (cpu_z_flag() == 1)) {
                 R[NUM_PC] += (int16)(dst->embedded.h);
                 continue;
             }
             break;
         case BGEB:
-            if (cpu_n_flag() == 0 | cpu_z_flag() == 1) {
+            if ((cpu_n_flag() == 0) | (cpu_z_flag() == 1)) {
                 R[NUM_PC] += (int8)(dst->embedded.b);
                 continue;
             }
@@ -1614,7 +1614,7 @@ t_stat sim_instr(void)
             cpu_set_v_flag(0);
             break;
         case BLH:
-            if (cpu_n_flag() == 1 & cpu_z_flag() == 0) {
+            if ((cpu_n_flag() == 1) & (cpu_z_flag() == 0)) {
                 R[NUM_PC] += (int16)(dst->embedded.h);
                 continue;
             }
@@ -1992,7 +1992,7 @@ t_stat sim_instr(void)
             a = cpu_read_op(src1) & 31;
             b = (uint32) cpu_read_op(src2);
             mask = (CHAR_BIT * sizeof(a) - 1);
-            d = (b >> a) | (b << ((-a) & mask));
+            d = (b >> a) | (b << ((~a + 1) & mask));
             cpu_write_op(dst, d);
             cpu_set_nz_flags(d, dst);
             cpu_set_v_flag(0);
@@ -2686,14 +2686,15 @@ static uint32 cpu_read_op(operand * op)
         return data;
     default:
         assert(0);
+		return 0;
     }
 }
 
 
-static void cpu_write_op(operand * op, int32 val)
+static void cpu_write_op(operand * op, t_uint64 val)
 {
     uint32 eff;
-    op->data = val;
+    op->data = (uint32) val;
 
     /* Writing to a register. */
     if (op->mode == 4 && op->reg < 15) {
@@ -2705,7 +2706,7 @@ static void cpu_write_op(operand * op, int32 val)
 
         /* Registers always get the full 32-bits written */
 
-        R[op->reg] = val;
+        R[op->reg] = (uint32) val;
 
         return;
     }
@@ -2732,7 +2733,7 @@ static void cpu_write_op(operand * op, int32 val)
     switch (op_type(op)) {
     case UW:
     case WD:
-        write_w(eff, val);
+        write_w(eff, (uint32) val);
         break;
     case HW:
     case UH:
@@ -2976,7 +2977,6 @@ static SIM_INLINE void cpu_set_v_flag(t_bool val)
 
 static void cpu_set_nz_flags(t_uint64 data, operand *dst)
 {
-    uint32 mask;
     int8 type = op_type(dst);
 
     switch (type) {

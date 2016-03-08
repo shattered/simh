@@ -95,8 +95,8 @@ t_stat id_svc(UNIT *uptr);
 t_stat id_reset(DEVICE *dptr);
 t_stat id_attach(UNIT *uptr, char *cptr);
 t_stat id_boot(int32 unitno, DEVICE *dptr);
-uint32 id_read(uint32 pa, uint8 size);
-void id_write(uint32 pa, uint32 val, uint8 size);
+uint32 id_read(uint32 pa, size_t size);
+void id_write(uint32 pa, uint32 val, size_t size);
 
 void id_drq_handled();
 

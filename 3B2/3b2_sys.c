@@ -133,7 +133,6 @@ t_stat fprint_sym(FILE *of, t_addr addr, t_value *val, UNIT *uptr, int32 sw)
 {
     uint32 len = 4;
     int32 k, vp, num;
-    instr *ip;
 
     if (sw & SWMASK ('B')) {
         len = 1;

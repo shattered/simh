@@ -202,7 +202,7 @@ void cpu_set_exception(uint8 et, uint8 isc);
 void cpu_set_irq(uint16 ipl, uint8 id, t_bool nmi);
 
 /* Globally scoped IO functions */
-uint32 io_read(uint32 pa, uint8 size);
-void io_write(int32 pa, int32 val, uint8 size);
+uint32 io_read(uint32 pa, size_t size);
+void io_write(uint32 pa, uint32 val, size_t size);
 
 #endif

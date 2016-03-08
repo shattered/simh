@@ -72,7 +72,7 @@ t_stat id_boot(int32 unitno, DEVICE *dptr)
     return SCPE_OK;
 }
 
-uint32 id_read(uint32 pa, uint8 size) {
+uint32 id_read(uint32 pa, size_t size) {
     uint8 data, reg;
 
     data = 0;
@@ -230,7 +230,7 @@ void id_handle_data(uint8 val)
 }
 
 
-void id_write(uint32 pa, uint32 val, uint8 size)
+void id_write(uint32 pa, uint32 val, size_t size)
 {
     uint8 reg;
 

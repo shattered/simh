@@ -91,7 +91,7 @@ DEVICE mmu_dev = {
     DEV_DEBUG, 0, sys_deb_tab
 };
 
-uint32 mmu_read(uint32 pa, uint8 size)
+uint32 mmu_read(uint32 pa, size_t size)
 {
     uint32 offset;
     uint32 data = 0;
@@ -172,7 +172,7 @@ uint32 mmu_read(uint32 pa, uint8 size)
     return data;
 }
 
-void mmu_write(uint32 pa, uint32 val, uint8 size)
+void mmu_write(uint32 pa, uint32 val, size_t size)
 {
     uint32 offset;
 
@@ -508,7 +508,7 @@ void pwrite_b(uint32 pa, uint8 val)
 uint32 mmu_xlate_addr(uint32 vaddr)
 {
     uint8 sid;
-    uint32 ssl, sdt, sdt_addr, sd_addr, seg_addr, pd_addr, psl, pot, sot, page_base, page_addr;
+    uint32 ssl, sdt_addr, sd_addr, seg_addr, pd_addr, psl, pot, sot, page_base;
     uint8 user_perm, super_perm, exec_perm, kern_perm;
     t_bool present, contiguous, valid, indirect;
     static uint32 sd[2];

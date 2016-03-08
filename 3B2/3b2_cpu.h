@@ -404,7 +404,7 @@ static SIM_INLINE uint8 cpu_execution_level();
 static SIM_INLINE void cpu_set_execution_level(uint8 level);
 static uint32 cpu_effective_address(operand * op);
 static uint32 cpu_read_op(operand * op);
-static void cpu_write_op(operand * op, int32 val);
+static void cpu_write_op(operand * op, t_uint64 val);
 static void cpu_set_nz_flags(t_uint64 data, operand * op);
 static void cpu_push_word(uint32 val);
 static uint32 cpu_pop_word();

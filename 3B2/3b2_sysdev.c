@@ -83,7 +83,7 @@ t_stat csr_reset(DEVICE *dptr)
     return SCPE_OK;
 }
 
-uint32 csr_read(uint32 pa, uint8 size)
+uint32 csr_read(uint32 pa, size_t size)
 {
     uint32 reg = pa - CSRBASE;
 
@@ -125,7 +125,7 @@ uint32 csr_read(uint32 pa, uint8 size)
     }
 }
 
-void csr_write(uint32 pa, uint32 val, uint8 size)
+void csr_write(uint32 pa, uint32 val, size_t size)
 {
     uint32 reg = pa - CSRBASE;
 
@@ -291,7 +291,7 @@ t_stat nvram_detach(UNIT *uptr)
 }
 
 
-uint32 nvram_read(uint32 pa, uint8 size)
+uint32 nvram_read(uint32 pa, size_t size)
 {
     uint32 offset = pa - NVRAMBASE;
     uint32 data;
@@ -319,7 +319,7 @@ uint32 nvram_read(uint32 pa, uint8 size)
     return data;
 }
 
-void nvram_write(uint32 pa, uint32 val, uint8 size)
+void nvram_write(uint32 pa, uint32 val, size_t size)
 {
     uint32 offset = pa - NVRAMBASE;
     uint32 index = offset >> 2;
@@ -401,7 +401,7 @@ t_stat timer_reset(DEVICE *dptr) {
     return SCPE_OK;
 }
 
-uint32 timer_read(uint32 pa, uint8 size)
+uint32 timer_read(uint32 pa, size_t size)
 {
     uint8 reg;
 
@@ -419,7 +419,7 @@ uint32 timer_read(uint32 pa, uint8 size)
     }
 }
 
-void timer_write(uint32 pa, uint32 val, uint8 size)
+void timer_write(uint32 pa, uint32 val, size_t size)
 {
     uint8 reg;
 
@@ -446,10 +446,10 @@ void timer_write(uint32 pa, uint32 val, uint8 size)
     }
 }
 
-uint32 tod_read(uint32 pa, uint8 size) {
+uint32 tod_read(uint32 pa, size_t size) {
     return 0;
 }
 
-void tod_write(uint32 pa, uint32 val, uint8 size) {
+void tod_write(uint32 pa, uint32 val, size_t size) {
     return;
 }

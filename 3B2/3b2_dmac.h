@@ -102,8 +102,8 @@ typedef struct {
 
 /* DMAC */
 t_stat dmac_reset(DEVICE *dptr);
-uint32 dmac_read(uint32 pa, uint8 size);
-void dmac_write(uint32 pa, uint32 val, uint8 size);
+uint32 dmac_read(uint32 pa, size_t size);
+void dmac_write(uint32 pa, uint32 val, size_t size);
 void dmac_service_drqs();
 
 void dmac_service_id(uint32 service_address);

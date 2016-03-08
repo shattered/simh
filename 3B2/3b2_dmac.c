@@ -49,7 +49,7 @@ dmac_drq_handler dmac_drq_handlers[] = {
     {0, 0, 0, NULL, NULL}
 };
 
-uint32 dmac_read(uint32 pa, uint8 size)
+uint32 dmac_read(uint32 pa, size_t size)
 {
     /*
      * Not implemented, because the 3B2 never appears to actually read
@@ -187,7 +187,7 @@ void dmac_page_update(uint8 base, uint8 reg, uint8 val)
     }
 }
 
-void dmac_write(uint32 pa, uint32 val, uint8 size)
+void dmac_write(uint32 pa, uint32 val, size_t size)
 {
     uint8 reg, base;
 

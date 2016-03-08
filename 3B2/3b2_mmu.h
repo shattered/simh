@@ -98,8 +98,8 @@ typedef struct {
 
 extern DEVICE mmu_dev;
 
-uint32 mmu_read(uint32 pa, uint8 size);
-void mmu_write(uint32 pa, uint32 val, uint8 size);
+uint32 mmu_read(uint32 pa, size_t size);
+void mmu_write(uint32 pa, uint32 val, size_t size);
 
 /* Physical memory read/write */
 uint8  pread_b(uint32 pa);

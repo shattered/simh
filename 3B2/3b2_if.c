@@ -76,7 +76,7 @@ t_stat if_reset(DEVICE *dptr)
     return SCPE_OK;
 }
 
-uint32 if_read(uint32 pa, uint8 size) {
+uint32 if_read(uint32 pa, size_t size) {
     uint8 reg, data;
     uint32 pos;
     UNIT *uptr;
@@ -116,8 +116,8 @@ uint32 if_read(uint32 pa, uint8 size) {
 
             pos += IF_SECTOR_SIZE * (if_state.sector - 1);
 
-            data = fseek(uptr->fileref, pos, 0);
-            data = fread(if_buf, 512, 1, uptr->fileref);
+            fseek(uptr->fileref, pos, 0);
+            fread(if_buf, 512, 1, uptr->fileref);
 
             sim_debug(READ_MSG, &if_dev,
                       "Reading CYL %d, SEC %d, SIDE %d\n",
@@ -205,7 +205,7 @@ void if_handle_command()
     }
 }
 
-void if_write(uint32 pa, uint32 val, uint8 size)
+void if_write(uint32 pa, uint32 val, size_t size)
 {
     uint8 reg;
     uint32 pc;

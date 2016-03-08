@@ -39,8 +39,8 @@ extern DEVICE uart_dev;
 
 t_stat uart_reset(DEVICE *dptr);
 t_stat uart_svc(UNIT *uptr);
-uint32 uart_read(uint32 pa, uint8 size);
-void uart_write(uint32 pa, uint32 val, uint8 size);
+uint32 uart_read(uint32 pa, size_t size);
+void uart_write(uint32 pa, uint32 val, size_t size);
 
 static SIM_INLINE void uart_w_buf(uint8 portno, uint8 val);
 static SIM_INLINE void uart_w_cmd(uint8 portno, uint8 val);
