@@ -130,19 +130,19 @@ t_bool addr_is_rom(uint32 pa);
 t_bool addr_is_mem(uint32 pa);
 t_bool addr_is_io(uint32 pa);
 
-t_bool mmu_enabled();
-void mmu_enable();
-void mmu_disable();
+extern t_bool mmu_enabled();
+extern void mmu_enable();
+extern void mmu_disable();
 
-extern SIM_INLINE t_bool mmu_enabled();
-extern SIM_INLINE void mmu_enable();
-extern SIM_INLINE void mmu_disable();
-extern SIM_INLINE uint8 read_b(uint32 va);
-extern SIM_INLINE uint16 read_h(uint32 va);
-extern SIM_INLINE uint32 read_w(uint32 va);
-extern SIM_INLINE uint32 read_w_u(uint32 va);
-extern SIM_INLINE void write_b(uint32 va, uint8 val);
-extern SIM_INLINE void write_h(uint32 va, uint16 val);
-extern SIM_INLINE void write_w(uint32 va, uint32 val);
+extern t_bool mmu_enabled();
+extern void mmu_enable();
+extern void mmu_disable();
+extern uint8 read_b(uint32 va);
+extern uint16 read_h(uint32 va);
+extern uint32 read_w(uint32 va);
+extern uint32 read_w_u(uint32 va);
+extern void write_b(uint32 va, uint8 val);
+extern void write_h(uint32 va, uint16 val);
+extern void write_w(uint32 va, uint32 val);
 
 #endif
