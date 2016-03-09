@@ -2687,7 +2687,7 @@ static uint32 cpu_read_op(operand * op)
         return data;
     default:
         assert(0);
-		return 0;
+        return 0;
     }
 }
 
