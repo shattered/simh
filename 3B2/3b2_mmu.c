@@ -62,8 +62,6 @@
  *
  *******************************************************************/
 
-MMU_STATE mmu_state;
-
 UNIT mmu_unit = { UDATA(NULL, 0, 0) };
 
 REG mmu_reg[] = {
@@ -254,25 +252,6 @@ void mmu_write(uint32 pa, uint32 val, size_t size)
                   R[NUM_PC], val);
         break;
     }
-}
-
-SIM_INLINE t_bool mmu_enabled()
-{
-    return mmu_state.enabled;
-}
-
-SIM_INLINE void mmu_enable()
-{
-    sim_debug(EXECUTE_MSG, &mmu_dev,
-              "Enabling MMU.\n");
-    mmu_state.enabled = TRUE;
-}
-
-SIM_INLINE void mmu_disable()
-{
-    sim_debug(EXECUTE_MSG, &mmu_dev,
-              "Disabling MMU.\n");
-    mmu_state.enabled = FALSE;
 }
 
 t_bool addr_is_rom(uint32 pa)
@@ -590,43 +569,4 @@ uint32 mmu_xlate_addr(uint32 vaddr)
     pot = vaddr & 0x7ff;
 
     return page_base | pot;
-}
-
-/*
- * Dispatch functions
- */
-
-SIM_INLINE uint8 read_b(uint32 va)
-{
-    return pread_b(mmu_xlate_addr(va));
-}
-
-SIM_INLINE uint16 read_h(uint32 va)
-{
-    return pread_h(mmu_xlate_addr(va));
-}
-
-SIM_INLINE uint32 read_w(uint32 va)
-{
-    return pread_w(mmu_xlate_addr(va));
-}
-
-SIM_INLINE uint32 read_w_u(uint32 va)
-{
-    return pread_w_u(mmu_xlate_addr(va));
-}
-
-SIM_INLINE void write_b(uint32 va, uint8 val)
-{
-    pwrite_b(mmu_xlate_addr(va), val);
-}
-
-SIM_INLINE void write_h(uint32 va, uint16 val)
-{
-    pwrite_h(mmu_xlate_addr(va), val);
-}
-
-SIM_INLINE void write_w(uint32 va, uint32 val)
-{
-    pwrite_w(mmu_xlate_addr(va), val);
 }

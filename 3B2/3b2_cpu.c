@@ -729,8 +729,8 @@ void fprint_sym_m(FILE *st, instr *ip)
 
 t_stat cpu_show_hist(FILE *st, UNIT *uptr, int32 val, void *desc)
 {
-    int32 i, j;
-    size_t count;
+    int32 i;
+    size_t j, count;
     char *cptr = (char *) desc;
     t_stat result;
     instr *ip;
