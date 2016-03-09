@@ -729,7 +729,8 @@ void fprint_sym_m(FILE *st, instr *ip)
 
 t_stat cpu_show_hist(FILE *st, UNIT *uptr, int32 val, void *desc)
 {
-    uint32 i, j, count;
+    int32 i, j;
+    size_t count;
     char *cptr = (char *) desc;
     t_stat result;
     instr *ip;
@@ -737,7 +738,7 @@ t_stat cpu_show_hist(FILE *st, UNIT *uptr, int32 val, void *desc)
     /* 'count' is the number of history entries the user wants */
 
     if (cptr) {
-        count = (uint32) get_uint(cptr, 10, cpu_history_size, &result);
+        count = (size_t) get_uint(cptr, 10, cpu_history_size, &result);
         if ((result != SCPE_OK) || (count == 0)) {
             return SCPE_ARG;
         }
