@@ -1088,9 +1088,9 @@ static uint8 decode_operand(uint32 pa, instr *instr, uint8 op_number)
         switch (oper->reg) {
         case 15: /* Absolute Deferred */
             oper->embedded.w = (uint32) read_b(pa + offset++);
-            oper->embedded.w |= ((uint32) read_b(pa + offset++)) << 8;
-            oper->embedded.w |= ((uint32) read_b(pa + offset++)) << 16;
-            oper->embedded.w |= ((uint32) read_b(pa + offset++)) << 24;
+            oper->embedded.w |= ((uint32) read_b(pa + offset++)) << 8u;
+            oper->embedded.w |= ((uint32) read_b(pa + offset++)) << 16u;
+            oper->embedded.w |= ((uint32) read_b(pa + offset++)) << 24u;
             break;
         case 0:
         case 2:
