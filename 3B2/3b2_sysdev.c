@@ -90,36 +90,8 @@ uint32 csr_read(uint32 pa, size_t size)
     sim_debug(READ_MSG, &csr_dev, "RCSR [%2x]\n", reg);
 
     switch (reg) {
-    case 0x0:
-        return csr_data & CSRIOF;
-    case 0x1:
-        return (csr_data & CSRDMA)  >> 1;
     case 0x2:
-        return (csr_data & CSRDISK) >> 2;
-    case 0x3:
-        return (csr_data & CSRUART) >> 3;
-    case 0x4:
-        return (csr_data & CSRPIR9) >> 4;
-    case 0x5:
-        return (csr_data & CSRPIR8) >> 5;
-    case 0x6:
-        return (csr_data & CSRCLK)  >> 6;
-    case 0x7:
-        return (csr_data & CSRIFLT) >> 7;
-    case 0x8:
-        return (csr_data & CSRITIM) >> 8;
-    case 0x9:
-        return (csr_data & CSRFLOP) >> 9;
-    case 0xa:
-        return (csr_data & CSRLED)  >> 10;
-    case 0xb:
-        return (csr_data & CSRALGN) >> 11;
-    case 0xc:
-        return (csr_data & CSRRRST) >> 12;
-    case 0xd:
-        return (csr_data & CSRPARE) >> 13;
-    case 0xe:
-        return (csr_data & CSRTIMO) >> 14;
+        return csr_data;
     default:
         return 0;
     }

@@ -227,7 +227,7 @@ mnemonic ops[256] = {
     {0x2c,  2, OP_DESC, WD, "CALL",    0, -1, -1,  1},
     {0x2d, -1, OP_NONE, NA, "???",    -1, -1, -1, -1},
     {0x2e,  0, OP_NONE, NA, "BPT",    -1, -1, -1, -1},
-    {0x2f, -1, OP_NONE, NA, "???",    -1, -1, -1, -1},
+    {0x2f,  0, OP_NONE, NA, "WAIT",   -1, -1, -1, -1},
     {0x30, -1, OP_NONE, NA, "???",    -1, -1, -1, -1}, /* Two-byte instructions */
     {0x31, -1, OP_NONE, NA, "???",    -1, -1, -1, -1},
     {0x32,  1, OP_COPR, WD, "SPOP",   -1, -1, -1, -1},
@@ -630,7 +630,7 @@ t_bool cpu_is_pc_a_subroutine_call (t_addr **ret_addrs)
     static uint32 returns[MAX_SUB_RETURN_SKIP+1] = {0};
     static t_bool caveats_displayed = FALSE;
     int i;
-    
+
     if (!caveats_displayed) {
         caveats_displayed = TRUE;
         sim_printf ("%s", cpu_next_caveats);
@@ -650,7 +650,7 @@ t_bool cpu_is_pc_a_subroutine_call (t_addr **ret_addrs)
                                                  SWMASK ('M')));
         for (i=1; i<MAX_SUB_RETURN_SKIP; i++) {
             /* Possible skip return */
-            returns[i] = returns[i-1] + 1;     
+            returns[i] = returns[i-1] + 1;
         }
         returns[i] = 0;  /* Make sure the address list ends with a zero */
         *ret_addrs = returns;
@@ -1397,9 +1397,15 @@ t_stat sim_instr(void)
 
     operand *src1, *src2, *src3, *dst;
 
+    t_bool in_wait;
+
     while (reason == 0) {
 
         if (sim_interval <= 0) {
+
+            // XXX HACK HACK HACK
+            cpu_set_irq(15, 15, 0);
+
             if ((reason = sim_process_event())) {
                 break;
             }
@@ -1418,6 +1424,7 @@ t_stat sim_instr(void)
             /* Clear global IRQ state */
             cpu_irq_ipl = -1;
             cpu_nmi = FALSE;
+            in_wait = FALSE;
 
             if (handled) {
                 continue;
@@ -1428,6 +1435,10 @@ t_stat sim_instr(void)
         dmac_service_drqs();
 
         sim_interval--;
+
+        if (in_wait) {
+            continue;
+        }
 
         /* Reset the TM bits */
         R[NUM_PSW] = R[NUM_PSW] & ~PSW_TM;
@@ -2357,6 +2368,11 @@ t_stat sim_instr(void)
         case TSTB:
             a = cpu_read_op(src1);
             cpu_set_nz_flags(a, src1);
+            cpu_set_c_flag(0);
+            cpu_set_v_flag(0);
+            break;
+        case WAIT:
+            in_wait = TRUE;
             break;
         case XORW2:
         case XORH2:

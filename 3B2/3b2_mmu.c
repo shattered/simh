@@ -507,7 +507,7 @@ uint32 mmu_xlate_addr(uint32 vaddr)
     sd[1] = pread_w(sd_addr + 4);
 
     present    = sd[0] & 1;
-    contiguous = (sd[0] >> 2) & 1;
+    contiguous = sd[0] & 4;
     valid      = (sd[0] >> 6) & 1;
     indirect   = (sd[0] >> 7) & 1;
 
@@ -537,6 +537,10 @@ uint32 mmu_xlate_addr(uint32 vaddr)
 
         sot = (vaddr & 0x1ffff);
 
+        sim_debug(EXECUTE_MSG, &mmu_dev,
+                  ">> XLATE_CONTG: vaddr=%08x, sd_addr=%08x, paddr=%08x\n",
+                  vaddr, sd_addr, seg_addr + sot);
+
         return seg_addr + sot;
     }
 
@@ -563,6 +567,10 @@ uint32 mmu_xlate_addr(uint32 vaddr)
 
     page_base = pd & 0xfffff800;
     pot = vaddr & 0x7ff;
+
+    sim_debug(EXECUTE_MSG, &mmu_dev,
+              ">> XLATE_PAGED: vaddr=%08x, sd_addr=%08x, paddr=%08x\n",
+              vaddr, sd_addr, page_base | pot);
 
     return page_base | pot;
 }
