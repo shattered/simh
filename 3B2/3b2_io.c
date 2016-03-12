@@ -29,7 +29,6 @@
 
 struct iolink iotable[] = {
     { MMUBASE,    MMUBASE+MMUSIZE,       &mmu_read,   &mmu_write   },
-    { TODBASE,    TODBASE+TODSIZE,       &tod_read,   &tod_write   },
     { TIMERBASE,  TIMERBASE+TIMERSIZE,   &timer_read, &timer_write },
     { NVRAMBASE,  NVRAMBASE+NVRAMSIZE,   &nvram_read, &nvram_write },
     { CSRBASE,    CSRBASE+CSRSIZE,       &csr_read,   &csr_write   },

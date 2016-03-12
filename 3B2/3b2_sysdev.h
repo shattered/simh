@@ -57,9 +57,12 @@
 #define CSRDMA    0x0002
 #define CSRIOF    0x0001
 
+#define CLK_DELAY 5000             /* 100 Hz */
+
 extern DEVICE nvram_dev;
 extern DEVICE timer_dev;
 extern DEVICE csr_dev;
+extern DEVICE clk_dev;
 extern DEBTAB sys_deb_tab[];
 
 /* NVRAM */
@@ -85,8 +88,8 @@ t_stat csr_reset(DEVICE *dptr);
 uint32 csr_read(uint32 pa, size_t size);
 void csr_write(uint32 pa, uint32 val, size_t size);
 
-/* TOD */
-uint32 tod_read(uint32 pa, size_t size);
-void tod_write(uint32 pa, uint32 val, size_t size);
+/* 100Hz CLK */
+t_stat clk_svc(UNIT *uptr);
+t_stat clk_reset(DEVICE *dptr);
 
 #endif

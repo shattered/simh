@@ -1402,10 +1402,6 @@ t_stat sim_instr(void)
     while (reason == 0) {
 
         if (sim_interval <= 0) {
-
-            // XXX HACK HACK HACK
-            cpu_set_irq(15, 15, 0);
-
             if ((reason = sim_process_event())) {
                 break;
             }

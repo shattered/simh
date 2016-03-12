@@ -140,12 +140,14 @@ void csr_write(uint32 pa, uint32 val, size_t size)
         break;
     case 0x33:    /* set pir9      */
         csr_data |= CSRPIR9;
+        cpu_set_irq(9, 9, 0);
         break;
     case 0x37:    /* clear pir9    */
         csr_data &= ~CSRPIR9;
         break;
     case 0x3b:    /* set pir8      */
         csr_data |= CSRPIR8;
+        cpu_set_irq(8, 8, 0);
         break;
     case 0x3f:    /* clear pir8    */
         csr_data &= ~CSRPIR8;
@@ -418,10 +420,33 @@ void timer_write(uint32 pa, uint32 val, size_t size)
     }
 }
 
-uint32 tod_read(uint32 pa, size_t size) {
-    return 0;
+/* 100Hz Clock */
+
+UNIT clk_unit = { UDATA (&clk_svc, UNIT_IDLE+UNIT_FIX, sizeof(uint32)), CLK_DELAY }; /* 100Hz */
+
+DEVICE clk_dev = {
+    "CLK", &clk_unit, NULL, NULL,
+    1, 0, 8, 4, 0, 32,
+    NULL, NULL, &clk_reset,
+    NULL, NULL, NULL,
+    NULL, 0, 0, NULL, NULL, NULL, NULL, NULL, NULL, 
+    NULL
+};
+
+int32 clk_tps = 100;   /* ticks/second */
+
+t_stat clk_svc (UNIT *uptr) {
+    /* Clear the CSR */
+    csr_data &= ~CSRCLK;
+    /* Send clock interrupt */
+    cpu_set_irq(15, 15, 0);
+    sim_activate_after(&clk_unit, 1000000/clk_tps);
+    return SCPE_OK;
 }
 
-void tod_write(uint32 pa, uint32 val, size_t size) {
-    return;
+t_stat clk_reset(DEVICE *dptr) {
+    if (!sim_is_running) {
+        sim_activate_after (&clk_unit, 1000000/clk_tps);
+    }
+    return SCPE_OK;
 }

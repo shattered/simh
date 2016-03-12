@@ -35,7 +35,9 @@
 /* -v flag for examine routine */
 #define EX_V_FLAG 1 << 21
 
-#define MAX_HIST_SIZE  50000
+/* NB: This value is set very high during development for better
+   debugging */
+#define MAX_HIST_SIZE  1000000
 #define DEF_HIST_SIZE  100
 #define MAXMEMSIZE     (1 << 22)             /* 4 MB */
 #define MEM_SIZE       (cpu_unit.capac)      /* actual memory size */

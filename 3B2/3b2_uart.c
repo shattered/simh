@@ -120,7 +120,6 @@ t_stat uart_svc(UNIT *uptr)
 {
     int32 temp;
 
-    /* sim_activate(&uart_unit, uart_unit.wait); */
     sim_activate(&uart_unit, uart_unit.wait);
 
     if (u.c_en && --u.c_val == 0) {
