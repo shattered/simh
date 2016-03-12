@@ -104,12 +104,10 @@ static int counter = 2;
 
 void id_handle_command(uint8 val)
 {
-    uint8 dev, aux_cmd, data;
+    uint8 aux_cmd, data, cmd_byte;
 
-    id_state.data_p = 0;
-
-    id_state.cmd = (val >> 4) & 0xf;
-    dev = val & 0x07;
+    id_state.cmd = (val >> 4) & 0x7;
+    id_state.bufskew = val & 0x8;
 
     switch(id_state.cmd) {
     case ID_CMD_AUX: /* Auxiliary Command */
@@ -141,6 +139,10 @@ void id_handle_command(uint8 val)
         break;
     case ID_CMD_SIS:
         sim_debug(WRITE_MSG, &id_dev, ">>> COMMAND: SENSE INTERRUPT STATUS\n");
+
+        id_state.data_p = 0;
+        id_state.data[0] = ID_IST_SEN;
+
         id_state.status |= ID_STAT_CEH; /* Command complete */
         break;
     case ID_CMD_SPEC:
@@ -148,24 +150,40 @@ void id_handle_command(uint8 val)
 
         /* Inspect the data, reset the pointers */
         for (id_state.data_p = 0; id_state.data_p < 8; id_state.data_p++) {
+            cmd_byte = id_state.data[id_state.data_p];
+
             sim_debug(WRITE_MSG, &id_dev,
-                      ">>>    Processing byte: %02x\n", id_state.data[id_state.data_p]);
+                      ">>>    Processing byte: %02x\n", cmd_byte);
+
+            switch (id_state.data_p) {
+            case 1:  /* DTLH */
+                id_state.polling = (cmd_byte & ID_DTLH_POLL) == 0;
+
+                if (id_state.polling) {
+                    sim_debug(WRITE_MSG, &id_dev, "(Setting Polling Mode ON)\n");
+                } else {
+                    sim_debug(WRITE_MSG, &id_dev, "(Setting Polling Mode OFF)\n");
+                }
+
+                break;
+            case 0:  /* MODE */
+            case 2:  /* DTLL */
+            case 3:  /* ETN */
+            case 4:  /* ESN */
+            case 5:  /* GPL2 */
+            case 6:  /* RWCH */
+            case 7:  /* RWCL */
+                break;
+            }
         }
 
         id_state.status = ID_STAT_CEH; /* Command complete */
         break;
     case ID_CMD_SUS:
+        sim_debug(WRITE_MSG, &id_dev, ">>> COMMAND: SENSE UNIT STATUS\n");
         id_state.data_p = 0;
-
-        data = 0x1a;
-
-        if (id_state.track == 0) {
-            data |= 0x04;
-        }
-
-        sim_debug(WRITE_MSG, &id_dev, ">>> COMMAND: SENSE UNIT STATUS: %02x\n", data);
-
-        id_state.data[id_state.data_p++] = data;
+        id_state.data[0] = (ID_UST_DSEL | ID_UST_SCL | ID_UST_TK0 | ID_UST_RDY);
+        id_state.status &= ~ID_STAT_SRQ;
         id_state.status |= ID_STAT_CEH; /* Command complete */
         break;
     case ID_CMD_DERR:
@@ -173,14 +191,37 @@ void id_handle_command(uint8 val)
         id_state.status |= ID_STAT_CEH; /* Command complete */
         break;
     case ID_CMD_RECAL:
-        sim_debug(WRITE_MSG, &id_dev, ">>> COMMAND: RECALIBRATE\n");
-        id_state.track = 0;
-        id_state.track = id_state.data[0] << 8 | id_state.data[1];
-        id_state.status |= ID_STAT_SRQ;
-        id_state.status |= ID_STAT_CEH; /* Command complete */
+        sim_debug(WRITE_MSG, &id_dev, ">>> COMMAND: RECALIBRATE. buffered=%s, polling=%s\n",
+                  id_state.bufskew ? "on" : "off",
+                  id_state.polling ? "on" : "off");
 
+        /* Recalibrate to TRACK 0 */
+        id_state.track = 0;
+
+        id_state.status |= ID_STAT_CEH;
+        id_state.status |= ID_STAT_SRQ;
+        /* Make data ready to read. */
         id_state.data_p = 0;
-        id_state.data[id_state.data_p++] = 0x60;
+        id_state.data[0] = ID_IST_SEN;
+
+        if (id_state.bufskew) {
+            /* Buffered Mode */
+            if (id_state.polling) {
+                /* Buffered Mode with Polling */
+            } else {
+                /* Buffered Mode with Polling Disabled */
+            }
+        } else {
+            /* Normal Mode */
+            if (id_state.polling) {
+                /* Normal Mode with Polling */
+                id_state.status |= ID_STAT_CEH;
+                /* TODO: Cause an interrupt */
+            } else {
+                /* Normal Mode with Polling Disabled */
+
+            }
+        }
 
         break;
     case ID_CMD_SEEK:
@@ -203,7 +244,9 @@ void id_handle_command(uint8 val)
         break;
     case ID_CMD_RDATA:
         sim_debug(WRITE_MSG, &id_dev, ">>> COMMAND: READ DATA\n");
-        id_state.status = (ID_STAT_CEH | ID_STAT_DRQ); /* command complete */
+        id_state.data_p = 0;
+        id_state.status = (ID_STAT_CEH | ID_STAT_DRQ); /* command
+                                                          complete */
         break;
     case ID_CMD_CHECK:
         sim_debug(WRITE_MSG, &id_dev, ">>> COMMAND: READ CHECK\n");

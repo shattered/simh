@@ -66,6 +66,20 @@
 #define ID_STAT_CEH     0x40
 #define ID_STAT_CB      0x80
 
+#define ID_IST_SEN      0x80
+#define ID_IST_RC       0x40
+#define ID_IST_SER      0x20
+#define ID_IST_EQC      0x10
+#define ID_IST_NR       0x08
+
+#define ID_UST_DSEL     0x10
+#define ID_UST_SCL      0x08
+#define ID_UST_TK0      0x04
+#define ID_UST_RDY      0x02
+#define ID_UST_WFL      0x01
+
+#define ID_DTLH_POLL    0x10
+
 /* Unit, Register, Device descriptions */
 
 #define ID_FIFO_LEN 8
@@ -76,7 +90,8 @@ typedef struct {
     uint8 data_p;              /* FIFO write pointer */
     uint8 status;
     uint16 track;
-
+    t_bool bufskew;            /* Either BUFFERED or SKEWED mode */
+    t_bool polling;
     t_bool drq;
 } ID_STATE;
 
