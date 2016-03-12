@@ -44,6 +44,8 @@ uint32 cpu_hist_t;
 uint32 cpu_hist_h;
 instr *last_instruction = NULL;
 
+t_bool cpu_in_wait = FALSE;
+
 /* Register data */
 uint32 R[16];
 
@@ -606,6 +608,7 @@ t_stat cpu_reset(DEVICE *dptr)
 
     cpu_hist_t = 0;
     cpu_hist_h = 0;
+    cpu_in_wait = 0;
 
     sim_brk_types = SWMASK('E');
     sim_brk_dflt = SWMASK('E');
@@ -1397,8 +1400,6 @@ t_stat sim_instr(void)
 
     operand *src1, *src2, *src3, *dst;
 
-    t_bool in_wait;
-
     while (reason == 0) {
 
         if (sim_interval <= 0) {
@@ -1420,7 +1421,7 @@ t_stat sim_instr(void)
             /* Clear global IRQ state */
             cpu_irq_ipl = -1;
             cpu_nmi = FALSE;
-            in_wait = FALSE;
+            cpu_in_wait = FALSE;
 
             if (handled) {
                 continue;
@@ -1432,7 +1433,7 @@ t_stat sim_instr(void)
 
         sim_interval--;
 
-        if (in_wait) {
+        if (cpu_in_wait) {
             continue;
         }
 
@@ -2368,7 +2369,7 @@ t_stat sim_instr(void)
             cpu_set_v_flag(0);
             break;
         case WAIT:
-            in_wait = TRUE;
+            cpu_in_wait = TRUE;
             break;
         case XORW2:
         case XORH2:

@@ -82,22 +82,24 @@ uint32 id_read(uint32 pa, size_t size) {
     case 0:     /* Data Buffer Register */
         if (id_state.data_p < ID_FIFO_LEN) {
             data = id_state.data[id_state.data_p++];
-            sim_debug(READ_MSG, &id_dev, ">>> READ DATA: %02x\n", data);
+            sim_debug(READ_MSG, &id_dev,
+                      "[%08x] >>> READ DATA: %02x\n",
+                      R[NUM_PC], data);
             id_state.status &= ~(ID_STAT_CEL | ID_STAT_CEH);
-        }
+       }
 
         break;
     case 1:     /* Status Register */
         data = id_state.status;
-        sim_debug(READ_MSG, &id_dev, ">>> READ STATUS %02x\n", data);
-
-        /* XXX HACK: Try to set the SEQ bit after a read */
-        id_state.status |= ID_STAT_SRQ;
+        sim_debug(READ_MSG, &id_dev,
+                  "[%08x] >>> READ STATUS %02x\n",
+                  R[NUM_PC], data);
         break;
     }
 
     return data;
 }
+
 static int counter = 2;
 
 void id_handle_command(uint8 val)
@@ -150,7 +152,7 @@ void id_handle_command(uint8 val)
                       ">>>    Processing byte: %02x\n", id_state.data[id_state.data_p]);
         }
 
-        id_state.status |= ID_STAT_CEH; /* Command complete */
+        id_state.status = ID_STAT_CEH; /* Command complete */
         break;
     case ID_CMD_SUS:
         id_state.data_p = 0;
@@ -174,8 +176,12 @@ void id_handle_command(uint8 val)
         sim_debug(WRITE_MSG, &id_dev, ">>> COMMAND: RECALIBRATE\n");
         id_state.track = 0;
         id_state.track = id_state.data[0] << 8 | id_state.data[1];
-        id_state.status &= ~ID_STAT_SRQ;
+        id_state.status |= ID_STAT_SRQ;
         id_state.status |= ID_STAT_CEH; /* Command complete */
+
+        id_state.data_p = 0;
+        id_state.data[id_state.data_p++] = 0x60;
+
         break;
     case ID_CMD_SEEK:
         data = id_state.data[0] << 8 | id_state.data[1];
@@ -220,7 +226,9 @@ void id_handle_command(uint8 val)
 
 void id_handle_data(uint8 val)
 {
-    sim_debug(WRITE_MSG, &id_dev, ">>> DATA=%02x\n", val);
+    sim_debug(WRITE_MSG, &id_dev,
+              "[%08x] >>> DATA=%02x\n",
+              R[NUM_PC], val);
 
     if (id_state.data_p < ID_FIFO_LEN) {
         id_state.data[id_state.data_p++] = val & 0xff;
