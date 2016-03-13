@@ -1908,8 +1908,6 @@ t_stat sim_instr(void)
             b = cpu_read_op(dst);         /* dst */
             mask = (1 << width) - 1;
 
-            a &= mask;
-
             b &= ~(mask << offset);
             b |= (a << offset);
 

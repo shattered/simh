@@ -35,6 +35,8 @@
 
 #include "3b2_sysdev.h"
 
+int32 clk_tps = 100;   /* ticks/second */
+
 DEBTAB sys_deb_tab[] = {
     { "INIT",       INIT_MSG,       "Init"             },
     { "READ",       READ_MSG,       "Read activity"    },
@@ -331,11 +333,15 @@ struct timers {
     int32 counter_a;
     int32 counter_b;
     int32 counter_c;
+
+    t_bool a_enabled;
+    t_bool b_enabled;
+    t_bool c_enabled;
 };
 
 struct timers TIMER;
 
-UNIT timer_unit = { UDATA(&timer_svc, 0, 0), 1000L };
+UNIT timer_unit = { UDATA(&timer_svc, 0, 0), 5000L };
 
 REG timer_reg[] = {
     { NULL }
@@ -351,26 +357,38 @@ DEVICE timer_dev = {
 
 t_stat timer_svc(UNIT *uptr)
 {
-    TIMER.counter_a--;
-    if (TIMER.counter_a <= 0) {
-        TIMER.counter_a = TIMER.divider_a;
+    if (TIMER.a_enabled) {
+        TIMER.counter_a--;
+        if (TIMER.counter_a <= 0) {
+            TIMER.counter_a = TIMER.divider_a;
+        }
     }
 
-    TIMER.counter_b--;
-    if (TIMER.counter_b <= 0) {
-        TIMER.counter_b = TIMER.divider_b;
+    if (TIMER.b_enabled) {
+        TIMER.counter_b--;
+        if (TIMER.counter_b <= 0) {
+            TIMER.counter_b = TIMER.divider_b;
+        }
     }
 
-    TIMER.counter_c--;
-    if (TIMER.counter_c <= 0) {
-        TIMER.counter_c = TIMER.divider_c;
+    if (TIMER.c_enabled) {
+        TIMER.counter_c--;
+        if (TIMER.counter_c <= 0) {
+            TIMER.counter_c = TIMER.divider_c;
+        }
     }
+
+    /* TODO: Re-enable when we know what to do with the timers */
+    /* sim_activate_after(&timer_unit, 5000L); */
 
     return SCPE_OK;
 }
 
 t_stat timer_reset(DEVICE *dptr) {
     memset(&TIMER, 0, sizeof(TIMER));
+
+    /* TODO: Re-enable when we know what to do with the timers */
+    /* sim_activate_after(&timer_unit, 5000L); */
 
     return SCPE_OK;
 }
@@ -383,11 +401,11 @@ uint32 timer_read(uint32 pa, size_t size)
 
     switch (reg) {
     case 3:  /* Counter 0 */
-        return TIMER.counter_a & 0xff;
+        return TIMER.divider_a & 0xff;
     case 7:  /* Counter 1 */
-        return TIMER.counter_b & 0xff;
+        return TIMER.divider_b & 0xff;
     case 11: /* Counter 2 */
-        return TIMER.counter_c & 0xff;
+        return TIMER.divider_c & 0xff;
     default:
         return 0;
     }
@@ -399,18 +417,24 @@ void timer_write(uint32 pa, uint32 val, size_t size)
 
     reg = pa - TIMERBASE;
 
+    sim_debug(WRITE_MSG, &timer_dev, "[%08x] Timer write [%d] = %02x\n",
+              R[NUM_PC], reg, val);
+
     switch (reg) {
     case 3:  /* Counter 0 */
         TIMER.divider_a = val;
         TIMER.counter_a = TIMER.divider_a;
+        TIMER.a_enabled = TRUE;
         break;
     case 7:  /* Counter 1 */
         TIMER.divider_b = val;
         TIMER.counter_b = TIMER.divider_b;
+        TIMER.b_enabled = TRUE;
         break;
     case 11: /* Counter 2 */
         TIMER.divider_c = val;
         TIMER.counter_c = TIMER.divider_c;
+        TIMER.c_enabled = TRUE;
         break;
     case 15:
         /* TODO: Set modes */
@@ -429,11 +453,9 @@ DEVICE clk_dev = {
     1, 0, 8, 4, 0, 32,
     NULL, NULL, &clk_reset,
     NULL, NULL, NULL,
-    NULL, 0, 0, NULL, NULL, NULL, NULL, NULL, NULL, 
+    NULL, 0, 0, NULL, NULL, NULL, NULL, NULL, NULL,
     NULL
 };
-
-int32 clk_tps = 100;   /* ticks/second */
 
 t_stat clk_svc (UNIT *uptr) {
     /* Clear the CSR */
