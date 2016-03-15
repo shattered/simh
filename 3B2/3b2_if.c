@@ -82,6 +82,8 @@ uint32 if_read(uint32 pa, size_t size) {
     UNIT *uptr;
     uint32 pc;
 
+    sim_debug(READ_MSG, &if_dev, "[%08x] IF READ: %08x\n", R[NUM_PC], pa);
+
     uptr = &(if_dev.units[0]);
     reg = pa - IFBASE;
     pc = R[NUM_PC];
@@ -212,6 +214,8 @@ void if_write(uint32 pa, uint32 val, size_t size)
 
     uint32 pos;
     UNIT *uptr;
+
+    sim_debug(WRITE_MSG, &if_dev, "[%08x] IF WRITE: %08x\n", R[NUM_PC], pa);
 
     uptr = &(if_dev.units[0]);
 
