@@ -59,11 +59,17 @@ DEVICE if_dev = {
 
 uint8 if_buf[512];
 int16 if_buf_ptr;
+t_bool if_irq_needed;
 
 /* Function implementation */
 
 t_stat if_svc(UNIT *uptr)
 {
+    if (if_irq_needed) {
+        cpu_set_irq(11, 11, 0);
+        if_irq_needed = FALSE;
+    }
+    sim_activate_after(if_unit, 1000L);
     return SCPE_OK;
 }
 
@@ -73,16 +79,23 @@ t_stat if_reset(DEVICE *dptr)
     if_state.track = 0;
     if_state.sector = 1;
     if_buf_ptr = -1;
+    if_irq_needed = FALSE;
+    sim_activate_after(if_unit, 1000L);
     return SCPE_OK;
 }
+
+void if_handle_csr() {
+    sim_debug(WRITE_MSG, &if_dev,
+              "[%08x] IF_HANDLE_CSR\n", R[NUM_PC]);
+    /* TODO: Do we actually need to do anything here? */
+}
+
 
 uint32 if_read(uint32 pa, size_t size) {
     uint8 reg, data;
     uint32 pos;
     UNIT *uptr;
     uint32 pc;
-
-    sim_debug(READ_MSG, &if_dev, "[%08x] IF READ: %08x\n", R[NUM_PC], pa);
 
     uptr = &(if_dev.units[0]);
     reg = pa - IFBASE;
@@ -214,8 +227,6 @@ void if_write(uint32 pa, uint32 val, size_t size)
 
     uint32 pos;
     UNIT *uptr;
-
-    sim_debug(WRITE_MSG, &if_dev, "[%08x] IF WRITE: %08x\n", R[NUM_PC], pa);
 
     uptr = &(if_dev.units[0]);
 

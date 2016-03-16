@@ -47,6 +47,7 @@ typedef struct {
 extern DEVICE if_dev;
 extern DEBTAB sys_deb_tab[];
 extern IF_STATE if_state;
+extern t_bool if_irq_needed;
 
 #define IFBASE 0x4d000
 #define IFSIZE 0x10
@@ -112,5 +113,8 @@ t_stat if_boot(int32 unitno, DEVICE *dptr);
 uint32 if_read(uint32 pa, size_t size);
 void if_write(uint32 pa, uint32 val, size_t size);
 void if_drq_handled();
+void if_handle_command();
+/* Handle write to CSR "flop" bit */
+void if_handle_csr();
 
 #endif

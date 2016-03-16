@@ -124,9 +124,12 @@ void csr_write(uint32 pa, uint32 val, size_t size)
         break;
     case 0x1b:    /* set flop      */
         csr_data |= CSRFLOP;
+        csr_data |= CSRDISK;
+        if_handle_csr();
         break;
     case 0x1f:    /* clear flop    */
         csr_data &= ~CSRFLOP;
+        csr_data &= ~CSRDISK;
         break;
     case 0x23:    /* set timers    */
         csr_data |= CSRITIM;
@@ -142,7 +145,8 @@ void csr_write(uint32 pa, uint32 val, size_t size)
         break;
     case 0x33:    /* set pir9      */
         csr_data |= CSRPIR9;
-        cpu_set_irq(9, 9, 0);
+        /* cpu_set_irq(9, 9, 0); */
+        /* TODO: This is being ignored. Move it to a timer. */
         break;
     case 0x37:    /* clear pir9    */
         csr_data &= ~CSRPIR9;
@@ -378,8 +382,7 @@ t_stat timer_svc(UNIT *uptr)
         }
     }
 
-    /* TODO: Re-enable when we know what to do with the timers */
-    /* sim_activate_after(&timer_unit, 5000L); */
+    /* sim_activate_after(&timer_unit, 1000L); */
 
     return SCPE_OK;
 }
@@ -387,8 +390,7 @@ t_stat timer_svc(UNIT *uptr)
 t_stat timer_reset(DEVICE *dptr) {
     memset(&TIMER, 0, sizeof(TIMER));
 
-    /* TODO: Re-enable when we know what to do with the timers */
-    /* sim_activate_after(&timer_unit, 5000L); */
+    /* sim_activate_after(&timer_unit, 1000L); */
 
     return SCPE_OK;
 }
@@ -458,8 +460,8 @@ DEVICE clk_dev = {
 };
 
 t_stat clk_svc (UNIT *uptr) {
-    /* Clear the CSR */
-    csr_data &= ~CSRCLK;
+    /* Set the CSR */
+    csr_data |= CSRCLK;
     /* Send clock interrupt */
     cpu_set_irq(15, 15, 0);
     sim_activate_after(&clk_unit, 1000000/clk_tps);
