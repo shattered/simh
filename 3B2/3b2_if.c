@@ -69,7 +69,7 @@ t_stat if_svc(UNIT *uptr)
         cpu_set_irq(11, 11, 0);
         if_irq_needed = FALSE;
     }
-    sim_activate_after(if_unit, 1000L);
+    sim_activate_after(if_unit, 5000L);
     return SCPE_OK;
 }
 
@@ -80,16 +80,9 @@ t_stat if_reset(DEVICE *dptr)
     if_state.sector = 1;
     if_buf_ptr = -1;
     if_irq_needed = FALSE;
-    sim_activate_after(if_unit, 1000L);
+    sim_activate_after(if_unit, 5000L);
     return SCPE_OK;
 }
-
-void if_handle_csr() {
-    sim_debug(WRITE_MSG, &if_dev,
-              "[%08x] IF_HANDLE_CSR\n", R[NUM_PC]);
-    /* TODO: Do we actually need to do anything here? */
-}
-
 
 uint32 if_read(uint32 pa, size_t size) {
     uint8 reg, data;
@@ -156,6 +149,10 @@ uint32 if_read(uint32 pa, size_t size) {
 /* Handle the most recently received command */
 void if_handle_command()
 {
+    sim_debug(EXECUTE_MSG, &if_dev,
+              "[%08x] Executing command: %02x\n",
+              R[NUM_PC], if_state.cmd);
+
     if_buf_ptr = -1;
 
     switch(if_state.cmd & 0xf0) {
@@ -218,6 +215,8 @@ void if_handle_command()
     case IF_FORCE_INT:
         break;
     }
+
+    if_irq_needed = TRUE;
 }
 
 void if_write(uint32 pa, uint32 val, size_t size)
@@ -282,6 +281,7 @@ void if_write(uint32 pa, uint32 val, size_t size)
                       if_state.track, if_state.sector, if_state.side);
 
             if_buf_ptr = 0;
+            if_irq_needed = TRUE;
         }
 
         break;

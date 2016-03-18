@@ -1765,7 +1765,7 @@ t_stat sim_instr(void)
             a = cpu_read_op(src1);
             b = cpu_read_op(src2);
 
-            cpu_set_z_flag(b == a);
+            cpu_set_z_flag((uint32)b == (uint32)a);
             cpu_set_n_flag((int32)b < (int32)a);
             cpu_set_c_flag((uint32)b < (uint32)a);
             cpu_set_v_flag(0);
@@ -2800,6 +2800,10 @@ void cpu_set_exception(uint8 et, uint8 isc)
  */
 void cpu_set_irq(uint16 ipl, uint8 id, t_bool nmi)
 {
+    if (cpu_irq_ipl > -1) {
+        return;
+    }
+
     sim_debug(IRQ_MSG, &cpu_dev, "IRQ: Setting IRQ level %d, NMI=%d\n",
               ipl, nmi);
 

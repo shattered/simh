@@ -67,7 +67,7 @@ uint32 dmac_read(uint32 pa, size_t size)
  */
 void dmac_program(uint8 reg, uint8 val)
 {
-    uint8 channel_id, i;
+    uint8 channel_id, i, ad;
     dma_channel *channel;
 
     if (reg < 8) {
@@ -97,9 +97,11 @@ void dmac_program(uint8 reg, uint8 val)
 
         switch (reg & 1) {
         case 0: /* Address */
+            channel->addr &= ~(0xff << dma_state.bff * 8);
             channel->addr |= (val & 0xff) << (dma_state.bff * 8);
             break;
         case 1: /* Word Count */
+            channel->wcount &= ~(0xff << dma_state.bff * 8);
             channel->wcount |= (val & 0xff) << (dma_state.bff * 8);
             break;
         }
@@ -173,15 +175,19 @@ void dmac_page_update(uint8 base, uint8 reg, uint8 val)
 
     switch (base) {
     case DMA_ID:
+        dma_state.channels[DMA_ID_CHAN].page &= ~(0xff << shift);
         dma_state.channels[DMA_ID_CHAN].page |= (val << shift);
         break;
     case DMA_IUA:
+        dma_state.channels[DMA_IUA_CHAN].page &= ~(0xff << shift);
         dma_state.channels[DMA_IUA_CHAN].page |= (val << shift);
         break;
     case DMA_IUB:
+        dma_state.channels[DMA_IUB_CHAN].page &= ~(0xff << shift);
         dma_state.channels[DMA_IUB_CHAN].page |= (val << shift);
         break;
     case DMA_IF:
+        dma_state.channels[DMA_IF_CHAN].page &= ~(0xff << shift);
         dma_state.channels[DMA_IF_CHAN].page |= (val << shift);
         break;
     }
@@ -194,15 +200,19 @@ void dmac_write(uint32 pa, uint32 val, size_t size)
     base = pa >> 12;
     reg = pa & 0xff;
 
+    sim_debug(WRITE_MSG, &dmac_dev,
+              "[%08x] DMAC WRITE. base=%02x, reg=%02x, val=%04x\n",
+              R[NUM_PC], base, reg, val);
+
     switch (base) {
-    case DMA_C:
+    case DMA_C:     /* 0x48 */
         dmac_program(reg, val);
         break;
 
-    case DMA_ID:
-    case DMA_IUA:
-    case DMA_IUB:
-    case DMA_IF:
+    case DMA_ID:    /* 0x45 */
+    case DMA_IUA:   /* 0x46 */
+    case DMA_IUB:   /* 0x47 */
+    case DMA_IF:    /* 0x4E */
         dmac_page_update(base, reg, val);
         break;
 
@@ -229,11 +239,11 @@ static SIM_INLINE uint32 dma_address(uint8 channel, uint32 offset, t_bool r) {
        documentation or source code to justify this observation apart
        from a few obscure #defines in SVR3 and the behavior of
        "newkey" in the PROM */
-    
+
     if (r) {
         addr += dma_state.channels[channel].page << 16;
     }
-    
+
     return addr;
 }
 
@@ -268,7 +278,7 @@ void dmac_service_if(uint32 service_address)
 
         break;
     case DMA_MODE_READ:
-        sim_debug(WRITE_MSG, &dmac_dev, ">>> DMAC READ: %d BYTES AT %08x\n",
+        sim_debug(READ_MSG, &dmac_dev, ">>> DMAC READ: %d BYTES AT %08x\n",
                   dma_state.channels[DMA_IF_CHAN].wcount + 1,
                   dma_address(DMA_IF_CHAN, 0, TRUE));
         offset = 0;

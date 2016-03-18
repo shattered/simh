@@ -517,8 +517,6 @@ uint32 mmu_xlate_addr(uint32 vaddr)
     kern_perm  = (sd[0] >> 30) & 3;
 
     /* TODO: Enforce permissions */
-    assert(present == 1);
-    assert(valid == 1);
     /* TODO: Handle indirect */
     assert(indirect == 0);
 

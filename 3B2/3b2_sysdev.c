@@ -15,7 +15,7 @@
    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
-   ROBERT M SUPNIK BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+   THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
    IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
    CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
@@ -27,10 +27,10 @@
    This file contains system-specific registers and devices for the
    following 3B2 devices:
 
-     - timer       The 8253 timer
+     - timer       8253 interval timer
      - nvram       Non-Volatile RAM
      - csr         Control Status Registers
-     - dmac        DMA controller
+     - clk         100Hz Interrupt Clock
 */
 
 #include "3b2_sysdev.h"
@@ -125,7 +125,6 @@ void csr_write(uint32 pa, uint32 val, size_t size)
     case 0x1b:    /* set flop      */
         csr_data |= CSRFLOP;
         csr_data |= CSRDISK;
-        if_handle_csr();
         break;
     case 0x1f:    /* clear flop    */
         csr_data &= ~CSRFLOP;
@@ -145,8 +144,6 @@ void csr_write(uint32 pa, uint32 val, size_t size)
         break;
     case 0x33:    /* set pir9      */
         csr_data |= CSRPIR9;
-        /* cpu_set_irq(9, 9, 0); */
-        /* TODO: This is being ignored. Move it to a timer. */
         break;
     case 0x37:    /* clear pir9    */
         csr_data &= ~CSRPIR9;
@@ -365,6 +362,13 @@ t_stat timer_svc(UNIT *uptr)
         TIMER.counter_a--;
         if (TIMER.counter_a <= 0) {
             TIMER.counter_a = TIMER.divider_a;
+            /* TODO: I have no earthly idea if PIR9 belongs
+               on this timer or not. Yet another reason I crave
+               systems documentation for the 3B2. */
+            if (csr_data & CSRPIR9) {
+                cpu_set_irq(9, 9, 0);
+                csr_data &= ~CSRPIR9;
+            }
         }
     }
 
@@ -382,7 +386,7 @@ t_stat timer_svc(UNIT *uptr)
         }
     }
 
-    /* sim_activate_after(&timer_unit, 1000L); */
+    sim_activate_after(&timer_unit, 5000L);
 
     return SCPE_OK;
 }
@@ -390,7 +394,7 @@ t_stat timer_svc(UNIT *uptr)
 t_stat timer_reset(DEVICE *dptr) {
     memset(&TIMER, 0, sizeof(TIMER));
 
-    /* sim_activate_after(&timer_unit, 1000L); */
+    sim_activate_after(&timer_unit, 5000L);
 
     return SCPE_OK;
 }
