@@ -66,10 +66,12 @@ t_bool if_irq_needed;
 t_stat if_svc(UNIT *uptr)
 {
     if (if_irq_needed) {
+        sim_debug(EXECUTE_MSG, &if_dev,
+                  ">>> Firing IF IRQ.\n");
         cpu_set_irq(11, 11, 0);
         if_irq_needed = FALSE;
     }
-    sim_activate_after(if_unit, 5000L);
+    sim_activate_after(if_unit, 1000L);
     return SCPE_OK;
 }
 
@@ -80,7 +82,7 @@ t_stat if_reset(DEVICE *dptr)
     if_state.sector = 1;
     if_buf_ptr = -1;
     if_irq_needed = FALSE;
-    sim_activate_after(if_unit, 5000L);
+    sim_activate_after(if_unit, 1000L);
     return SCPE_OK;
 }
 
@@ -110,6 +112,8 @@ uint32 if_read(uint32 pa, size_t size) {
         data = if_state.sector;
         break;
     case IF_DATA_REG:
+        if_state.status &= ~IF_DRQ;
+
         if (uptr->fileref == NULL) {
             /* We are not attached */
             return 0;
@@ -142,6 +146,11 @@ uint32 if_read(uint32 pa, size_t size) {
     default:
         break;
     }
+
+    sim_debug(READ_MSG, &if_dev,
+              "[%08x] IF READ: reg=%02x, data=%02x\n",
+              R[NUM_PC], reg, data);
+
 
     return data;
 }
@@ -183,7 +192,7 @@ void if_handle_command()
     }
 
     switch(if_state.cmd & 0xf0) {
-    case RESTORE:
+    case IF_RESTORE:
         if_state.track = 0;
         if_state.status |= IF_TK_0;
         break;
@@ -217,6 +226,7 @@ void if_handle_command()
     }
 
     if_irq_needed = TRUE;
+
 }
 
 void if_write(uint32 pa, uint32 val, size_t size)
@@ -231,7 +241,9 @@ void if_write(uint32 pa, uint32 val, size_t size)
 
     reg = pa - IFBASE;
 
-    pc = R[NUM_PC];
+    sim_debug(WRITE_MSG, &if_dev,
+              ">>> [%08x] IF WRITE: reg=%02x, data=%02x\n",
+              R[NUM_PC], reg, val);
 
     switch (reg) {
     case IF_CMD_REG:
@@ -293,6 +305,6 @@ void if_write(uint32 pa, uint32 val, size_t size)
 
 void if_drq_handled()
 {
+    sim_debug(EXECUTE_MSG, &if_dev, "IF DRQ HANDLED.\n");
     if_state.drq = FALSE;
-    if_state.status &= ~IF_DRQ;
 }

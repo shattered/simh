@@ -34,6 +34,7 @@
 */
 
 #include "3b2_sysdev.h"
+#include "3b2_uart.h"
 
 int32 clk_tps = 100;   /* ticks/second */
 
@@ -150,7 +151,6 @@ void csr_write(uint32 pa, uint32 val, size_t size)
         break;
     case 0x3b:    /* set pir8      */
         csr_data |= CSRPIR8;
-        cpu_set_irq(8, 8, 0);
         break;
     case 0x3f:    /* clear pir8    */
         csr_data &= ~CSRPIR8;
@@ -342,6 +342,8 @@ struct timers {
 
 struct timers TIMER;
 
+extern struct uart_state u;
+
 UNIT timer_unit = { UDATA(&timer_svc, 0, 0), 5000L };
 
 REG timer_reg[] = {
@@ -362,13 +364,6 @@ t_stat timer_svc(UNIT *uptr)
         TIMER.counter_a--;
         if (TIMER.counter_a <= 0) {
             TIMER.counter_a = TIMER.divider_a;
-            /* TODO: I have no earthly idea if PIR9 belongs
-               on this timer or not. Yet another reason I crave
-               systems documentation for the 3B2. */
-            if (csr_data & CSRPIR9) {
-                cpu_set_irq(9, 9, 0);
-                csr_data &= ~CSRPIR9;
-            }
         }
     }
 
@@ -383,7 +378,23 @@ t_stat timer_svc(UNIT *uptr)
         TIMER.counter_c--;
         if (TIMER.counter_c <= 0) {
             TIMER.counter_c = TIMER.divider_c;
-        }
+            /* TODO: I have no earthly idea if PIR8 & PIR9 belong on
+               this timer or not. Yet another reason I crave systems
+               documentation for the 3B2. */
+            if (csr_data & CSRPIR8) {
+                sim_debug(EXECUTE_MSG, &timer_dev,
+                          ">>> PIR8\n");
+                cpu_set_irq(8, 8, 0);
+                csr_data &= ~CSRPIR8;
+            } else if (csr_data & CSRPIR9) {
+                sim_debug(EXECUTE_MSG, &timer_dev,
+                          ">>> PIR9\n");
+                cpu_set_irq(9, 9, 0);
+                csr_data &= ~CSRPIR9;
+                u.istat |= ISTS_CRI;
+                csr_data |= CSRUART;
+            }
+       }
     }
 
     sim_activate_after(&timer_unit, 5000L);
