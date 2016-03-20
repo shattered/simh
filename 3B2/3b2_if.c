@@ -217,6 +217,8 @@ void if_handle_command()
 
     case IF_WRITE_SEC:
     case IF_WRITE_SEC_M:
+        sim_debug(EXECUTE_MSG, &if_dev,
+                  ">>> WRITE COMMAND.\n");
         if_state.status |= IF_DRQ;
         if_state.drq = TRUE;
         break;
@@ -226,7 +228,6 @@ void if_handle_command()
     }
 
     if_irq_needed = TRUE;
-
 }
 
 void if_write(uint32 pa, uint32 val, size_t size)
@@ -241,10 +242,6 @@ void if_write(uint32 pa, uint32 val, size_t size)
 
     reg = pa - IFBASE;
 
-    sim_debug(WRITE_MSG, &if_dev,
-              ">>> [%08x] IF WRITE: reg=%02x, data=%02x\n",
-              R[NUM_PC], reg, val);
-
     switch (reg) {
     case IF_CMD_REG:
         if_state.cmd = val & 0xff;
@@ -258,6 +255,8 @@ void if_write(uint32 pa, uint32 val, size_t size)
         break;
     case IF_DATA_REG:
         if_state.data = val & 0xff;
+
+        if_state.status &= ~IF_DRQ;
 
         if (uptr->fileref == NULL ||
             ((if_state.cmd & 0xf0) != IF_WRITE_SEC &&
@@ -276,7 +275,8 @@ void if_write(uint32 pa, uint32 val, size_t size)
             if_buf[if_buf_ptr++] = val & 0xff;
         }
 
-        if (if_buf_ptr == IF_SECTOR_SIZE) {
+        if (((if_state.cmd & 0xf0) == IF_WRITE_SEC) &&
+            (if_buf_ptr == IF_SECTOR_SIZE)) {
             pos = IF_TRACK_SIZE * if_state.track * 2;
 
             if (if_state.side == 1) {

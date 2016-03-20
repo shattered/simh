@@ -84,13 +84,11 @@ t_stat uart_svc(UNIT *uptr)
     if (u.c_en) {
         u.c_val -= t;
         if (u.c_val <= 0) {
-            sim_debug(EXECUTE_MSG, &uart_dev, ">>> uart_svc, t=%d\n", t);
             u.istat |= ISTS_CRI;
             u.c_val = u.c_set;
 
             /* Set IRQ 9 if requested */
             if (csr_data & CSRPIR9) {
-                sim_debug(EXECUTE_MSG, &uart_dev, ">>> UART TIMER FIRING IRQ 9!\n");
                 /* Flag the CSR with the source of the interrupt */
                 csr_data |= CSRUART;
                 cpu_set_irq(9, 9, 0);
@@ -99,7 +97,7 @@ t_stat uart_svc(UNIT *uptr)
     }
 
     if ((temp = sim_poll_kbd()) < SCPE_KFLAG) {
-        return temp;
+         return temp;
     }
 
     if (u.port[PORT_A].cmd & CMD_ETX) {
