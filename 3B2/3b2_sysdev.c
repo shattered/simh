@@ -90,7 +90,7 @@ uint32 csr_read(uint32 pa, size_t size)
 
     switch (reg) {
     case 0x2:
-        sim_debug(READ_MSG, &csr_dev, "CSR: Read\n");
+        sim_debug(READ_MSG, &csr_dev, "CSR: Read Data %04x\n", csr_data);
         return csr_data;
     default:
         return 0;

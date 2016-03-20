@@ -1774,7 +1774,7 @@ t_stat sim_instr(void)
             a = cpu_read_op(src1);
             b = cpu_read_op(src2);
 
-            cpu_set_z_flag(b == a);
+            cpu_set_z_flag((uint16)b == (uint16)a);
             cpu_set_n_flag((int16)b < (int16)a);
             cpu_set_c_flag((uint16)b < (uint16)a);
             cpu_set_v_flag(0);
@@ -1783,7 +1783,7 @@ t_stat sim_instr(void)
             a = cpu_read_op(src1);
             b = cpu_read_op(src2);
 
-            cpu_set_z_flag(b == a);
+            cpu_set_z_flag((uint8)b == (uint8)a);
             cpu_set_n_flag((int8)b < (int8)a);
             cpu_set_c_flag((uint8)b < (uint8)a);
             cpu_set_v_flag(0);
@@ -2359,10 +2359,20 @@ t_stat sim_instr(void)
 
             break;
         case TSTW:
+            a = cpu_read_op(src1);
+            cpu_set_nz_flags((uint32)a, src1);
+            cpu_set_c_flag(0);
+            cpu_set_v_flag(0);
+            break;
         case TSTH:
+            a = cpu_read_op(src1);
+            cpu_set_nz_flags((uint16)a, src1);
+            cpu_set_c_flag(0);
+            cpu_set_v_flag(0);
+            break;
         case TSTB:
             a = cpu_read_op(src1);
-            cpu_set_nz_flags(a, src1);
+            cpu_set_nz_flags((uint8)a, src1);
             cpu_set_c_flag(0);
             cpu_set_v_flag(0);
             break;
