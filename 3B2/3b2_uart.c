@@ -35,7 +35,7 @@ struct uart_state u;
 
 extern uint16 csr_data;
 
-UNIT uart_unit = { UDATA(&uart_svc, TT_MODE_8B, 0), UART_HZ };
+UNIT uart_unit = { UDATA(&uart_svc, TT_MODE_7B, 0), CLK_DELAY };
 
 REG uart_reg[] = {
     { HRDATAD(ISTAT,    u.istat,            8, "Interrupt Status") },
@@ -66,7 +66,8 @@ t_stat uart_reset(DEVICE *dptr)
     u.c_en = FALSE;
 
     if (!sim_is_active(&uart_unit)) {
-        sim_activate(&uart_unit, sim_rtcn_init(CLK_DELAY, CLK_UART));
+        uart_unit.wait = sim_rtcn_init(CLK_DELAY, CLK_UART);
+        sim_activate(&uart_unit, uart_unit.wait);
     }
 
     return SCPE_OK;
@@ -75,14 +76,13 @@ t_stat uart_reset(DEVICE *dptr)
 t_stat uart_svc(UNIT *uptr)
 {
     int32 temp;
-    int32 t;
 
-    t = sim_rtcn_calb(UART_HZ, CLK_UART);
-
-    sim_activate(&uart_unit, t);
+    /* Recalibrate the timer */
+    uart_unit.wait = sim_rtcn_calb(UART_HZ, CLK_UART);
+    sim_activate(&uart_unit, uart_unit.wait);
 
     if (u.c_en) {
-        u.c_val -= t;
+        u.c_val -= UART_SPC;
         if (u.c_val <= 0) {
             u.istat |= ISTS_CRI;
             u.c_val = u.c_set;

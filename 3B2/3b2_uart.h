@@ -66,7 +66,10 @@ extern DEVICE uart_dev;
 
 #define UARTBASE            0x49000
 #define UARTSIZE            0x100
-#define UART_HZ             230525      /* UART timer Hz */
+#define UART_SPC            100      /* Steps per tick */
+#define UART_HZ             2305     /* UART timer Hz/100 (actual
+                                        value: 230525) */
+
 
 struct port {
     uint8 stat;           /* Port Status */

@@ -40,17 +40,14 @@
 
 IF_STATE if_state;
 
-UNIT if_unit[] = {
-    { UDATA (&if_svc, UNIT_FIX+UNIT_ATTABLE, IF_DSK_SIZE), 1000L },
-    { NULL }
-};
+UNIT if_unit = { UDATA (&if_svc, UNIT_FIX+UNIT_ATTABLE, IF_DSK_SIZE), 1000L };
 
 REG if_reg[] = {
     { NULL }
 };
 
 DEVICE if_dev = {
-    "IF", if_unit, if_reg, NULL,
+    "IF", &if_unit, if_reg, NULL,
     1, 16, 31, 1, 16, 8,
     NULL, NULL, &if_reset,
     NULL, NULL, NULL, NULL,
@@ -71,7 +68,9 @@ t_stat if_svc(UNIT *uptr)
         cpu_set_irq(11, 11, 0);
         if_irq_needed = FALSE;
     }
-    sim_activate_after(if_unit, 1000L);
+    if (!sim_is_active(&if_unit)) {
+        sim_activate(&if_unit, if_unit.wait);
+    }
     return SCPE_OK;
 }
 
@@ -82,7 +81,7 @@ t_stat if_reset(DEVICE *dptr)
     if_state.sector = 1;
     if_buf_ptr = -1;
     if_irq_needed = FALSE;
-    sim_activate_after(if_unit, 1000L);
+    sim_activate(&if_unit, if_unit.wait);
     return SCPE_OK;
 }
 
@@ -256,8 +255,6 @@ void if_write(uint32 pa, uint32 val, size_t size)
     case IF_DATA_REG:
         if_state.data = val & 0xff;
 
-        if_state.status &= ~IF_DRQ;
-
         if (uptr->fileref == NULL ||
             ((if_state.cmd & 0xf0) != IF_WRITE_SEC &&
              (if_state.cmd & 0xf0) != IF_WRITE_SEC_M)) {
@@ -275,8 +272,12 @@ void if_write(uint32 pa, uint32 val, size_t size)
             if_buf[if_buf_ptr++] = val & 0xff;
         }
 
-        if (((if_state.cmd & 0xf0) == IF_WRITE_SEC) &&
-            (if_buf_ptr == IF_SECTOR_SIZE)) {
+        sim_debug(WRITE_MSG, &if_dev, ">>> SETTING DRQ ON DATA WRITE.\n");
+        if_state.status |= IF_DRQ;
+        if_state.drq = TRUE;
+        if_irq_needed = TRUE;
+
+        if (if_buf_ptr == IF_SECTOR_SIZE) {
             pos = IF_TRACK_SIZE * if_state.track * 2;
 
             if (if_state.side == 1) {
@@ -293,7 +294,6 @@ void if_write(uint32 pa, uint32 val, size_t size)
                       if_state.track, if_state.sector, if_state.side);
 
             if_buf_ptr = 0;
-            if_irq_needed = TRUE;
         }
 
         break;
