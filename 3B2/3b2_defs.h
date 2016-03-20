@@ -107,6 +107,10 @@
 
 #define NA -1
 
+#define CLK_RTC   0
+#define CLK_UART  1
+#define CLK_DELAY 5000
+
 /*
  * Exceptions are described on page 2-66 of the WE32100 manual
  */

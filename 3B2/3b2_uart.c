@@ -33,7 +33,9 @@
 /* The UART state */
 struct uart_state u;
 
-UNIT uart_unit = { UDATA(&uart_svc, TT_MODE_7B, 0), 1000L };
+extern uint16 csr_data;
+
+UNIT uart_unit = { UDATA(&uart_svc, TT_MODE_8B, 0), UART_HZ };
 
 REG uart_reg[] = {
     { HRDATAD(ISTAT,    u.istat,            8, "Interrupt Status") },
@@ -63,7 +65,9 @@ t_stat uart_reset(DEVICE *dptr)
 
     u.c_en = FALSE;
 
-    sim_activate(&uart_unit, uart_unit.wait);
+    if (!sim_is_active(&uart_unit)) {
+        sim_activate(&uart_unit, sim_rtcn_init(CLK_DELAY, CLK_UART));
+    }
 
     return SCPE_OK;
 }
@@ -71,13 +75,27 @@ t_stat uart_reset(DEVICE *dptr)
 t_stat uart_svc(UNIT *uptr)
 {
     int32 temp;
+    int32 t;
 
-    sim_activate(&uart_unit, uart_unit.wait);
+    t = sim_rtcn_calb(UART_HZ, CLK_UART);
 
-    if (u.c_en && --u.c_val == 0) {
-        u.istat |= ISTS_CRI;
-        /* TODO: Interrupt here */
-        return SCPE_OK;
+    sim_activate(&uart_unit, t);
+
+    if (u.c_en) {
+        u.c_val -= t;
+        if (u.c_val <= 0) {
+            sim_debug(EXECUTE_MSG, &uart_dev, ">>> uart_svc, t=%d\n", t);
+            u.istat |= ISTS_CRI;
+            u.c_val = u.c_set;
+
+            /* Set IRQ 9 if requested */
+            if (csr_data & CSRPIR9) {
+                sim_debug(EXECUTE_MSG, &uart_dev, ">>> UART TIMER FIRING IRQ 9!\n");
+                /* Flag the CSR with the source of the interrupt */
+                csr_data |= CSRUART;
+                cpu_set_irq(9, 9, 0);
+            }
+        }
     }
 
     if ((temp = sim_poll_kbd()) < SCPE_KFLAG) {
@@ -157,10 +175,16 @@ uint32 uart_read(uint32 pa, size_t size)
         break;
     case 14:
         /* Start Counter Command */
+        sim_debug(EXECUTE_MSG, &uart_dev,
+                  "[%08x] >>> STARTING UART TIMER!\n",
+                  R[NUM_PC]);
         u.c_en = TRUE;
         break;
     case 15:
         /* Stop Counter Command */
+        sim_debug(EXECUTE_MSG, &uart_dev,
+                  "[%08x] >>> DISABLING UART TIMER!\n",
+                  R[NUM_PC]);
         u.c_en = FALSE;
         u.istat &= ~ISTS_CRI;
         break;
@@ -214,13 +238,27 @@ void uart_write(uint32 pa, uint32 val, size_t size)
     case 5:
         u.imask = val;
         break;
-    case 6:  /* Counter/Timer UpperPreset Value */
+    case 6:  /* Counter/Timer Upper Preset Value */
+        /* Clear out high byte */
+        u.c_set &= 0x00ff;
+        u.c_val &= 0x00ff;
+        /* Set high byte */
         u.c_set |= (val & 0xff) << 8;
-        u.c_val = u.c_set >> 8;
+        u.c_val |= (val & 0xff) << 8;
+
+        sim_debug(WRITE_MSG, &uart_dev, "CTU: set=%02x, New value=%04x\n", val, u.c_val);
+
         break;
     case 7:  /* Counter/Timer Lower Preset Value */
+        /* Clear out low byte */
+        u.c_set &= 0xff00;
+        u.c_val &= 0xff00;
+        /* Set low byte */
         u.c_set |= (val & 0xff);
-        u.c_val = u.c_set >> 8;
+        u.c_val |= (val & 0xff);
+
+        sim_debug(WRITE_MSG, &uart_dev, "CTL:  set=%02x, New value=%04x\n", val, u.c_val);
+
         break;
     case 10: /* Command B */
         uart_w_cmd(PORT_B, val);
@@ -291,15 +329,6 @@ static SIM_INLINE void uart_update_rxi(uint8 c)
         u.port[PORT_B].stat &= ~STS_RXR;
         u.istat &= ~ISTS_RBI;
     }
-
-    if ((u.istat & u.imask) > 0) {
-        /* TODO: Set interrupt */
-        sim_debug(READ_MSG, &uart_dev, "Setting Interrupt\n");
-    } else {
-        /* TODO: Clear interrupt */
-        sim_debug(READ_MSG, &uart_dev, "Clearing Interrupt\n");
-    }
-
 }
 
 static SIM_INLINE void uart_w_buf(uint8 portno, uint8 val)

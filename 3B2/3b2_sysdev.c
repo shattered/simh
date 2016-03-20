@@ -30,13 +30,11 @@
      - timer       8253 interval timer
      - nvram       Non-Volatile RAM
      - csr         Control Status Registers
-     - clk         100Hz Interrupt Clock
+     - rtc         100Hz Real Time Clock
 */
 
 #include "3b2_sysdev.h"
 #include "3b2_uart.h"
-
-int32 clk_tps = 100;   /* ticks/second */
 
 DEBTAB sys_deb_tab[] = {
     { "INIT",       INIT_MSG,       "Init"             },
@@ -90,10 +88,9 @@ uint32 csr_read(uint32 pa, size_t size)
 {
     uint32 reg = pa - CSRBASE;
 
-    sim_debug(READ_MSG, &csr_dev, "RCSR [%2x]\n", reg);
-
     switch (reg) {
     case 0x2:
+        sim_debug(READ_MSG, &csr_dev, "CSR: Read\n");
         return csr_data;
     default:
         return 0;
@@ -104,55 +101,69 @@ void csr_write(uint32 pa, uint32 val, size_t size)
 {
     uint32 reg = pa - CSRBASE;
 
-    sim_debug(WRITE_MSG, &csr_dev, "WCSR [%2x]\n", reg);
-
     switch (reg) {
     case 0x03:    /* clear sanity  */
+        sim_debug(WRITE_MSG, &csr_dev, "CSR: clear sanity\n");
         break;
     case 0x07:    /* clear parity  */
+        sim_debug(WRITE_MSG, &csr_dev, "CSR: clear parity\n");
         csr_data &= ~CSRPARE;
         break;
     case 0x0b:    /* set reqrst    */
+        sim_debug(WRITE_MSG, &csr_dev, "CSR: set reqrst\n");
         csr_data |= CSRRRST;
         break;
     case 0x0f:    /* clear align   */
+        sim_debug(WRITE_MSG, &csr_dev, "CSR: clear align\n");
         break;
     case 0x13:    /* set LED       */
+        sim_debug(WRITE_MSG, &csr_dev, "CSR: set LED\n");
         csr_data |= CSRLED;
         break;
     case 0x17:    /* clear LED     */
+        sim_debug(WRITE_MSG, &csr_dev, "CSR: clear LED\n");
         csr_data &= ~CSRLED;
         break;
     case 0x1b:    /* set flop      */
+        sim_debug(WRITE_MSG, &csr_dev, "CSR: set floppy\n");
         csr_data |= CSRFLOP;
         csr_data |= CSRDISK;
         break;
     case 0x1f:    /* clear flop    */
+        sim_debug(WRITE_MSG, &csr_dev, "CSR: clear floppy\n");
         csr_data &= ~CSRFLOP;
         csr_data &= ~CSRDISK;
         break;
     case 0x23:    /* set timers    */
+        sim_debug(WRITE_MSG, &csr_dev, "CSR: set timers\n");
         csr_data |= CSRITIM;
         break;
     case 0x27:    /* clear timers  */
+        sim_debug(WRITE_MSG, &csr_dev, "CSR: clear timers\n");
         csr_data &= ~CSRITIM;
         break;
     case 0x2b:    /* set inhibit   */
+        sim_debug(WRITE_MSG, &csr_dev, "CSR: set inhibit\n");
         csr_data |= CSRIOF;
         break;
     case 0x2f:    /* clear inhibit */
+        sim_debug(WRITE_MSG, &csr_dev, "CSR: clear inhibit\n");
         csr_data &= ~CSRIOF;
         break;
     case 0x33:    /* set pir9      */
+        sim_debug(WRITE_MSG, &csr_dev, "CSR: set PIR9\n");
         csr_data |= CSRPIR9;
         break;
     case 0x37:    /* clear pir9    */
+        sim_debug(WRITE_MSG, &csr_dev, "CSR: clear PIR9\n");
         csr_data &= ~CSRPIR9;
         break;
     case 0x3b:    /* set pir8      */
+        sim_debug(WRITE_MSG, &csr_dev, "CSR: set PIR8\n");
         csr_data |= CSRPIR8;
         break;
     case 0x3f:    /* clear pir8    */
+        sim_debug(WRITE_MSG, &csr_dev, "CSR: clear PIR8\n");
         csr_data &= ~CSRPIR8;
         break;
     }
@@ -383,16 +394,14 @@ t_stat timer_svc(UNIT *uptr)
                documentation for the 3B2. */
             if (csr_data & CSRPIR8) {
                 sim_debug(EXECUTE_MSG, &timer_dev,
-                          ">>> PIR8\n");
+                          ">>> FIRING PIR8\n");
                 cpu_set_irq(8, 8, 0);
-                csr_data &= ~CSRPIR8;
+                csr_data |= CSRCLK;
             } else if (csr_data & CSRPIR9) {
                 sim_debug(EXECUTE_MSG, &timer_dev,
-                          ">>> PIR9\n");
+                          ">>> FIRING PIR9\n");
                 cpu_set_irq(9, 9, 0);
-                csr_data &= ~CSRPIR9;
-                u.istat |= ISTS_CRI;
-                csr_data |= CSRUART;
+                csr_data |= CSRCLK;
             }
        }
     }
@@ -463,29 +472,31 @@ void timer_write(uint32 pa, uint32 val, size_t size)
 
 /* 100Hz Clock */
 
-UNIT clk_unit = { UDATA (&clk_svc, UNIT_IDLE+UNIT_FIX, sizeof(uint32)), CLK_DELAY }; /* 100Hz */
+UNIT rtc_unit = { UDATA (&rtc_svc, UNIT_IDLE+UNIT_FIX, sizeof(uint32)), CLK_DELAY };
 
-DEVICE clk_dev = {
-    "CLK", &clk_unit, NULL, NULL,
+DEVICE rtc_dev = {
+    "RTC", &rtc_unit, NULL, NULL,
     1, 0, 8, 4, 0, 32,
-    NULL, NULL, &clk_reset,
+    NULL, NULL, &rtc_reset,
     NULL, NULL, NULL,
     NULL, 0, 0, NULL, NULL, NULL, NULL, NULL, NULL,
     NULL
 };
 
-t_stat clk_svc (UNIT *uptr) {
+t_stat rtc_reset(DEVICE *dptr) {
+    if (!sim_is_active(&rtc_unit)) {
+        sim_activate(&rtc_unit, sim_rtcn_init(CLK_DELAY, CLK_RTC));
+    }
+    return SCPE_OK;
+}
+
+t_stat rtc_svc (UNIT *uptr) {
     /* Set the CSR */
     csr_data |= CSRCLK;
     /* Send clock interrupt */
     cpu_set_irq(15, 15, 0);
-    sim_activate_after(&clk_unit, 1000000/clk_tps);
-    return SCPE_OK;
-}
 
-t_stat clk_reset(DEVICE *dptr) {
-    if (!sim_is_running) {
-        sim_activate_after (&clk_unit, 1000000/clk_tps);
-    }
+    sim_register_clock_unit(&rtc_unit);
+    sim_activate(&rtc_unit, sim_rtcn_calb(RTC_HZ, CLK_RTC));
     return SCPE_OK;
 }

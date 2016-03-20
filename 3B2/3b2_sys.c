@@ -53,7 +53,7 @@ DEVICE *sim_devices[] = {
     &dmac_dev,
     &if_dev,
     &id_dev,
-    &clk_dev,
+    &rtc_dev,
     NULL
 };
 

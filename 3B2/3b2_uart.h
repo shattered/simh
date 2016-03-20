@@ -64,9 +64,9 @@
 
 extern DEVICE uart_dev;
 
-#define UARTBASE 0x49000
-#define UARTSIZE 0x100
-
+#define UARTBASE            0x49000
+#define UARTSIZE            0x100
+#define UART_HZ             230525      /* UART timer Hz */
 
 struct port {
     uint8 stat;           /* Port Status */
@@ -80,7 +80,7 @@ struct uart_state {
     uint8 istat;          /* Interrupt Status */
     uint8 imask;          /* Interrupt Mask */
     uint16 c_set;         /* Timer / Counter Setting */
-    uint16 c_val;         /* Timer / Counter Value */
+    int32  c_val;         /* Timer / Counter Value */
     t_bool c_en;          /* Counter Enabled */
     struct port port[2];  /* Port A and B */
 };
