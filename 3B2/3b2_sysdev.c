@@ -27,10 +27,10 @@
    This file contains system-specific registers and devices for the
    following 3B2 devices:
 
-     - timer       8253 interval timer
-     - nvram       Non-Volatile RAM
-     - csr         Control Status Registers
-     - rtc         100Hz Real Time Clock
+   - timer       8253 interval timer
+   - nvram       Non-Volatile RAM
+   - csr         Control Status Registers
+   - rtc         100Hz Real Time Clock
 */
 
 #include "3b2_sysdev.h"
@@ -335,138 +335,139 @@ void nvram_write(uint32 pa, uint32 val, size_t size)
     }
 }
 
-/* 8253 Timer */
-
-struct timers {
-    uint32 divider_a;
-    uint32 divider_b;
-    uint32 divider_c;
-
-    int32 counter_a;
-    int32 counter_b;
-    int32 counter_c;
-
-    t_bool a_enabled;
-    t_bool b_enabled;
-    t_bool c_enabled;
+/*
+ * 8253 Timer.
+ *
+ * The 8253 Timer IC has three interval timers, which we treat here as
+ * three units.
+ *
+ */
+struct timer_ctr {
+    uint32 divider;
+    int32  counter;
+    uint8  state;
+    t_bool enabled;
+    t_bool lmb;
 };
 
-struct timers TIMER;
+struct timer_ctr TIMERS[3];
 
-extern struct uart_state u;
+/*
+ * The three timers, (A, B, C) run at different
+ * programmatially controlled frequencies, so each must be
+ * handled through a different service routine.
+ */
 
-UNIT timer_unit = { UDATA(&timer_svc, 0, 0), 5000L };
+UNIT timer_unit[] = {
+    { UDATA(&timer_a_svc, 0, 0), CLK_DELAY },
+    { UDATA(&timer_b_svc, 0, 0), CLK_DELAY },
+    { UDATA(&timer_c_svc, 0, 0), CLK_DELAY },
+    { NULL }
+};
 
 REG timer_reg[] = {
+    { HRDATAD(DIVA, TIMERS[0].divider, 16, "Divider A") },
+    { HRDATAD(CTRA, TIMERS[0].counter, 16, "Counter A") },
+    { HRDATAD(STA,  TIMERS[0].state,   16, "State A") },
+    { HRDATAD(DIVB, TIMERS[1].divider, 16, "Divider B") },
+    { HRDATAD(CTRB, TIMERS[1].counter, 16, "Counter B") },
+    { HRDATAD(STB,  TIMERS[1].state,   16, "State B") },
+    { HRDATAD(DIVC, TIMERS[2].divider, 16, "Divider C") },
+    { HRDATAD(CTRC, TIMERS[2].counter, 16, "Counter C") },
+    { HRDATAD(STC,  TIMERS[2].state,   16, "State C") },
     { NULL }
 };
 
 DEVICE timer_dev = {
-    "TIMER", &timer_unit, timer_reg, NULL,
+    "TIMER", timer_unit, timer_reg, NULL,
     1, 16, 8, 4, 16, 32,
     NULL, NULL, &timer_reset,
     NULL, NULL, NULL, NULL,
     DEV_DEBUG, 0, sys_deb_tab
 };
 
-t_stat timer_svc(UNIT *uptr)
+t_stat timer_a_svc(UNIT *uptr)
 {
-    if (TIMER.a_enabled) {
-        TIMER.counter_a--;
-        if (TIMER.counter_a <= 0) {
-            TIMER.counter_a = TIMER.divider_a;
-        }
-    }
+    /* TODO: Recalibrate clock, handle interrupts */
+    return SCPE_OK;
+}
 
-    if (TIMER.b_enabled) {
-        TIMER.counter_b--;
-        if (TIMER.counter_b <= 0) {
-            TIMER.counter_b = TIMER.divider_b;
-        }
-    }
+t_stat timer_b_svc(UNIT *uptr)
+{
+    /* TODO: Recalibrate clock, handle interrupts */
+    return SCPE_OK;
+}
 
-    if (TIMER.c_enabled) {
-        TIMER.counter_c--;
-        if (TIMER.counter_c <= 0) {
-            TIMER.counter_c = TIMER.divider_c;
-            /* TODO: I have no earthly idea if PIR8 & PIR9 belong on
-               this timer or not. Yet another reason I crave systems
-               documentation for the 3B2. */
-            if (csr_data & CSRPIR8) {
-                sim_debug(EXECUTE_MSG, &timer_dev,
-                          ">>> FIRING PIR8\n");
-                cpu_set_irq(8, 8, 0);
-                csr_data |= CSRCLK;
-            } else if (csr_data & CSRPIR9) {
-                sim_debug(EXECUTE_MSG, &timer_dev,
-                          ">>> FIRING PIR9\n");
-                cpu_set_irq(9, 9, 0);
-                csr_data |= CSRCLK;
-            }
-       }
-    }
-
-    sim_activate_after(&timer_unit, 5000L);
-
+t_stat timer_c_svc(UNIT *uptr)
+{
+    /* TODO: Recalibrate clock, handle interrupts */
     return SCPE_OK;
 }
 
 t_stat timer_reset(DEVICE *dptr) {
-    memset(&TIMER, 0, sizeof(TIMER));
-
-    sim_activate_after(&timer_unit, 5000L);
-
+    memset(&TIMERS, 0, sizeof(struct timer_ctr) * 3);
+    /* TODO: Initialize clocks */
     return SCPE_OK;
 }
 
 uint32 timer_read(uint32 pa, size_t size)
 {
     uint8 reg;
+    struct timer_ctr *ctr;
 
     reg = pa - TIMERBASE;
 
-    switch (reg) {
-    case 3:  /* Counter 0 */
-        return TIMER.divider_a & 0xff;
-    case 7:  /* Counter 1 */
-        return TIMER.divider_b & 0xff;
-    case 11: /* Counter 2 */
-        return TIMER.divider_c & 0xff;
-    default:
-        return 0;
+    ctr = &TIMERS[(reg - 3) / 4];
+    switch(ctr->state & 0x30) {
+    case 0x10:
+        return ctr->divider & 0xff;
+    case 0x20:
+        return (ctr->divider & 0xff00) >> 8;
+    case 0x30:
+        if (ctr->lmb) {
+            ctr->lmb = FALSE;
+            return (ctr->divider & 0xff00) >> 8;
+        } else {
+            ctr->lmb = TRUE;
+            return ctr->divider & 0xff;
+        }
     }
 }
 
 void timer_write(uint32 pa, uint32 val, size_t size)
 {
     uint8 reg;
+    struct timer_ctr *ctr;
 
     reg = pa - TIMERBASE;
 
-    sim_debug(WRITE_MSG, &timer_dev, "[%08x] Timer write [%d] = %02x\n",
-              R[NUM_PC], reg, val);
+    sim_debug(WRITE_MSG, &timer_dev,
+              ">>> TIMER WRITE. reg=%02x, val=%02x\n",
+              reg, val);
 
-    switch (reg) {
-    case 3:  /* Counter 0 */
-        TIMER.divider_a = val;
-        TIMER.counter_a = TIMER.divider_a;
-        TIMER.a_enabled = TRUE;
-        break;
-    case 7:  /* Counter 1 */
-        TIMER.divider_b = val;
-        TIMER.counter_b = TIMER.divider_b;
-        TIMER.b_enabled = TRUE;
-        break;
-    case 11: /* Counter 2 */
-        TIMER.divider_c = val;
-        TIMER.counter_c = TIMER.divider_c;
-        TIMER.c_enabled = TRUE;
-        break;
-    case 15:
-        /* TODO: Set modes */
-        break;
-    default:
-        break;
+    if (reg == ITCTRL) {
+        ctr = &TIMERS[val >> 6];
+        ctr->state = val;
+    } else {
+        ctr = &TIMERS[(reg - 3) / 4];
+        switch(ctr->state & 0x30) {
+        case 0x10:
+            ctr->divider = val & 0xff;
+            break;
+        case 0x20:
+            ctr->divider = (val & 0xff) << 8;
+            break;
+        case 0x30:
+            if (ctr->lmb) {
+                ctr->lmb = FALSE;
+                ctr->divider = (ctr->divider & 0x00ff) | ((val & 0xff) << 8);
+            } else {
+                ctr->lmb = TRUE;
+                ctr->divider = (ctr->divider & 0xff00) | (val & 0xff);
+            }
+        }
+
+        ctr->counter = ctr->divider;
     }
 }
 
@@ -484,6 +485,7 @@ DEVICE rtc_dev = {
 };
 
 t_stat rtc_reset(DEVICE *dptr) {
+    sim_register_clock_unit(&rtc_unit);
     if (!sim_is_active(&rtc_unit)) {
         sim_activate(&rtc_unit, sim_rtcn_init(CLK_DELAY, CLK_RTC));
     }
@@ -491,12 +493,18 @@ t_stat rtc_reset(DEVICE *dptr) {
 }
 
 t_stat rtc_svc (UNIT *uptr) {
-    /* Set the CSR */
-    csr_data |= CSRCLK;
-    /* Send clock interrupt */
-    cpu_set_irq(15, 15, 0);
 
-    sim_register_clock_unit(&rtc_unit);
+    if (csr_data & CSRPIR8) {
+        csr_data &= ~CSRCLK;
+        cpu_set_irq(8, 8, 0);
+    } else if (csr_data & CSRPIR9) {
+        csr_data &= ~CSRCLK;
+        cpu_set_irq(9, 9, 0);
+    } else {
+        csr_data |= CSRCLK;
+        cpu_set_irq(15, 15, 0);
+    }
+
     sim_activate(&rtc_unit, sim_rtcn_calb(RTC_HZ, CLK_RTC));
     return SCPE_OK;
 }

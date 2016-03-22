@@ -57,6 +57,9 @@
 #define CSRDMA    0x0002
 #define CSRIOF    0x0001
 
+#define ITCTRL    0x0f
+
+
 #define RTC_HZ    100            /* RTC is 100 Hz */
 
 extern DEVICE nvram_dev;
@@ -79,7 +82,10 @@ void nvram_write(uint32 pa, uint32 val, size_t size);
 t_stat timer_reset(DEVICE *dptr);
 uint32 timer_read(uint32 pa, size_t size);
 void timer_write(uint32 pa, uint32 val, size_t size);
-t_stat timer_svc(UNIT *uptr);
+t_stat timer_a_svc(UNIT *uptr);
+t_stat timer_b_svc(UNIT *uptr);
+t_stat timer_c_svc(UNIT *uptr);
+
 
 /* CSR */
 t_stat csr_ex(t_value *vptr, t_addr exta, UNIT *uptr, int32 sw);
