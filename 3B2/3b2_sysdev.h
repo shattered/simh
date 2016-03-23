@@ -59,8 +59,7 @@
 
 #define ITCTRL    0x0f
 
-
-#define RTC_HZ    100            /* RTC is 100 Hz */
+#define TIMER_RATE 100000
 
 extern DEVICE nvram_dev;
 extern DEVICE timer_dev;
@@ -82,9 +81,7 @@ void nvram_write(uint32 pa, uint32 val, size_t size);
 t_stat timer_reset(DEVICE *dptr);
 uint32 timer_read(uint32 pa, size_t size);
 void timer_write(uint32 pa, uint32 val, size_t size);
-t_stat timer_a_svc(UNIT *uptr);
-t_stat timer_b_svc(UNIT *uptr);
-t_stat timer_c_svc(UNIT *uptr);
+t_stat timer_svc(UNIT *uptr);
 
 
 /* CSR */
@@ -93,9 +90,5 @@ t_stat csr_dep(t_value val, t_addr exta, UNIT *uptr, int32 sw);
 t_stat csr_reset(DEVICE *dptr);
 uint32 csr_read(uint32 pa, size_t size);
 void csr_write(uint32 pa, uint32 val, size_t size);
-
-/* 100Hz RTC */
-t_stat rtc_svc(UNIT *uptr);
-t_stat rtc_reset(DEVICE *dptr);
 
 #endif

@@ -107,8 +107,11 @@
 
 #define NA -1
 
-#define CLK_RTC   0
-#define CLK_UART  1
+#define CLK_TIM0  0          /* 8253 Timer 0 (A)                */
+#define CLK_TIM1  1          /* 8253 Timer 1 (B) - Provides RTC */
+#define CLK_TIM2  2          /* 8253 Timer 2 (C)                */
+#define CLK_UART  3          /* UART Timer                      */
+
 #define CLK_DELAY 5000
 
 /*

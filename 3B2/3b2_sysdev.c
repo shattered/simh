@@ -30,7 +30,6 @@
    - timer       8253 interval timer
    - nvram       Non-Volatile RAM
    - csr         Control Status Registers
-   - rtc         100Hz Real Time Clock
 */
 
 #include "3b2_sysdev.h"
@@ -343,9 +342,10 @@ void nvram_write(uint32 pa, uint32 val, size_t size)
  *
  */
 struct timer_ctr {
-    uint32 divider;
+    uint16 divider;
     int32  counter;
     uint8  state;
+    uint8  clock_number;
     t_bool enabled;
     t_bool lmb;
 };
@@ -359,22 +359,25 @@ struct timer_ctr TIMERS[3];
  */
 
 UNIT timer_unit[] = {
-    { UDATA(&timer_a_svc, 0, 0), CLK_DELAY },
-    { UDATA(&timer_b_svc, 0, 0), CLK_DELAY },
-    { UDATA(&timer_c_svc, 0, 0), CLK_DELAY },
+    { UDATA(&timer_svc, 0, 0), CLK_DELAY },
+    { UDATA(&timer_svc, 0, 0), CLK_DELAY },
+    { UDATA(&timer_svc, 0, 0), CLK_DELAY },
     { NULL }
 };
+
+/*
+*/
 
 REG timer_reg[] = {
     { HRDATAD(DIVA, TIMERS[0].divider, 16, "Divider A") },
     { HRDATAD(CTRA, TIMERS[0].counter, 16, "Counter A") },
-    { HRDATAD(STA,  TIMERS[0].state,   16, "State A") },
+    { HRDATAD(STA,  TIMERS[0].state,   16, "State A")   },
     { HRDATAD(DIVB, TIMERS[1].divider, 16, "Divider B") },
     { HRDATAD(CTRB, TIMERS[1].counter, 16, "Counter B") },
-    { HRDATAD(STB,  TIMERS[1].state,   16, "State B") },
+    { HRDATAD(STB,  TIMERS[1].state,   16, "State B")   },
     { HRDATAD(DIVC, TIMERS[2].divider, 16, "Divider C") },
     { HRDATAD(CTRC, TIMERS[2].counter, 16, "Counter C") },
-    { HRDATAD(STC,  TIMERS[2].state,   16, "State C") },
+    { HRDATAD(STC,  TIMERS[2].state,   16, "State C")   },
     { NULL }
 };
 
@@ -386,27 +389,73 @@ DEVICE timer_dev = {
     DEV_DEBUG, 0, sys_deb_tab
 };
 
-t_stat timer_a_svc(UNIT *uptr)
-{
-    /* TODO: Recalibrate clock, handle interrupts */
-    return SCPE_OK;
-}
-
-t_stat timer_b_svc(UNIT *uptr)
-{
-    /* TODO: Recalibrate clock, handle interrupts */
-    return SCPE_OK;
-}
-
-t_stat timer_c_svc(UNIT *uptr)
-{
-    /* TODO: Recalibrate clock, handle interrupts */
-    return SCPE_OK;
-}
-
 t_stat timer_reset(DEVICE *dptr) {
     memset(&TIMERS, 0, sizeof(struct timer_ctr) * 3);
-    /* TODO: Initialize clocks */
+
+    TIMERS[CLK_TIM0].clock_number = CLK_TIM0;
+    TIMERS[CLK_TIM1].clock_number = CLK_TIM1;
+    TIMERS[CLK_TIM2].clock_number = CLK_TIM2;
+
+    timer_unit[CLK_TIM0].up7 = &TIMERS[CLK_TIM0];
+    timer_unit[CLK_TIM1].up7 = &TIMERS[CLK_TIM1];
+    timer_unit[CLK_TIM2].up7 = &TIMERS[CLK_TIM2];
+
+    sim_register_clock_unit(&timer_unit[CLK_TIM0]);
+    sim_register_clock_unit(&timer_unit[CLK_TIM1]);
+    sim_register_clock_unit(&timer_unit[CLK_TIM2]);
+
+    if (!sim_is_active(&timer_unit[CLK_TIM0])) {
+        sim_activate(&timer_unit[CLK_TIM0], sim_rtcn_init(CLK_DELAY, CLK_TIM0));
+    }
+
+    if (!sim_is_active(&timer_unit[CLK_TIM1])) {
+        sim_activate(&timer_unit[CLK_TIM1], sim_rtcn_init(CLK_DELAY, CLK_TIM1));
+    }
+
+    if (!sim_is_active(&timer_unit[CLK_TIM2])) {
+        sim_activate(&timer_unit[CLK_TIM2], sim_rtcn_init(CLK_DELAY, CLK_TIM2));
+    }
+
+    return SCPE_OK;
+}
+
+t_stat timer_svc(UNIT *uptr)
+{
+    int32 rate, t;
+    struct timer_ctr *ctr;
+
+    ctr = (struct timer_ctr *)uptr->up7;
+
+    if (ctr->divider > 0) {
+        /* What is our clock rate in HZ? */
+        rate = TIMER_RATE / ctr->divider;
+        t = sim_rtcn_calb(rate, ctr->clock_number);
+        /* Recalibrate the clock */
+        sim_activate(uptr, t);
+
+        /* Because we're using a calibrated clock, we aren't tied
+           to the actual counter */
+
+        switch (ctr->clock_number) {
+        case CLK_TIM0:
+            break;
+        case CLK_TIM1:
+            csr_data |= CSRCLK;
+            cpu_set_irq(15, 15, 0);
+            break;
+        case CLK_TIM2:
+            if (csr_data & CSRPIR8) {
+                cpu_set_irq(8, 8, 0);
+            } else if (csr_data & CSRPIR9) {
+                csr_data &= ~(CSRCLK | CSRUART);
+                cpu_set_irq(9, 9, 0);
+            }
+            break;
+        }
+    } else {
+        sim_activate(uptr, CLK_DELAY);
+    }
+
     return SCPE_OK;
 }
 
@@ -431,6 +480,8 @@ uint32 timer_read(uint32 pa, size_t size)
             ctr->lmb = TRUE;
             return ctr->divider & 0xff;
         }
+    default:
+        return 0;
     }
 }
 
@@ -473,6 +524,7 @@ void timer_write(uint32 pa, uint32 val, size_t size)
 
 /* 100Hz Clock */
 
+/*
 UNIT rtc_unit = { UDATA (&rtc_svc, UNIT_IDLE+UNIT_FIX, sizeof(uint32)), CLK_DELAY };
 
 DEVICE rtc_dev = {
@@ -494,17 +546,8 @@ t_stat rtc_reset(DEVICE *dptr) {
 
 t_stat rtc_svc (UNIT *uptr) {
 
-    if (csr_data & CSRPIR8) {
-        csr_data &= ~CSRCLK;
-        cpu_set_irq(8, 8, 0);
-    } else if (csr_data & CSRPIR9) {
-        csr_data &= ~CSRCLK;
-        cpu_set_irq(9, 9, 0);
-    } else {
-        csr_data |= CSRCLK;
-        cpu_set_irq(15, 15, 0);
-    }
 
     sim_activate(&rtc_unit, sim_rtcn_calb(RTC_HZ, CLK_RTC));
     return SCPE_OK;
 }
+*/

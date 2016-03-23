@@ -40,7 +40,7 @@
 
 IF_STATE if_state;
 
-UNIT if_unit = { UDATA (&if_svc, UNIT_FIX+UNIT_ATTABLE, IF_DSK_SIZE), 1000L };
+UNIT if_unit = { UDATA (&if_svc, UNIT_FIX+UNIT_ATTABLE, IF_DSK_SIZE), 50000L };
 
 REG if_reg[] = {
     { NULL }
@@ -63,14 +63,10 @@ t_bool if_irq_needed;
 t_stat if_svc(UNIT *uptr)
 {
     if (if_irq_needed) {
-        sim_debug(EXECUTE_MSG, &if_dev,
-                  ">>> Firing IF IRQ.\n");
         cpu_set_irq(11, 11, 0);
         if_irq_needed = FALSE;
     }
-    if (!sim_is_active(&if_unit)) {
-        sim_activate(&if_unit, if_unit.wait);
-    }
+    sim_activate(&if_unit, if_unit.wait);
     return SCPE_OK;
 }
 
@@ -81,7 +77,9 @@ t_stat if_reset(DEVICE *dptr)
     if_state.sector = 1;
     if_buf_ptr = -1;
     if_irq_needed = FALSE;
-    sim_activate(&if_unit, if_unit.wait);
+    if (!sim_is_active(&if_unit)) {
+        sim_activate(&if_unit, if_unit.wait);
+    }
     return SCPE_OK;
 }
 
