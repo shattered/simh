@@ -87,12 +87,10 @@ t_stat uart_svc(UNIT *uptr)
             u.istat |= ISTS_CRI;
             u.c_val = u.c_set;
 
-            /* Set IRQ 9 if requested */
-            if (csr_data & CSRPIR9) {
-                /* Flag the CSR with the source of the interrupt */
-                csr_data |= CSRUART;
-                cpu_set_irq(9, 9, 0);
-            }
+            /* Set IRQ 9 */
+            /* Flag the CSR with the source of the interrupt */
+            csr_data |= CSRUART;
+            cpu_set_irq(9, 9, 0);
         }
     }
 

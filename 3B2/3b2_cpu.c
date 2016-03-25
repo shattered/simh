@@ -1332,7 +1332,7 @@ void cpu_context_switch_1(uint32 new_pcbp)
     cpu_context_switch_2(new_pcbp);
 }
 
-t_bool cpu_handle_irq(uint16 ipl, uint8 id, t_bool nmi)
+t_bool cpu_handle_irq(uint8 ipl, uint8 id, t_bool nmi)
 {
     uint8  psw_ipl;
     t_bool quick;
@@ -1342,10 +1342,6 @@ t_bool cpu_handle_irq(uint16 ipl, uint8 id, t_bool nmi)
     /* Maybe handle the IRQ */
     psw_ipl = ((R[NUM_PSW] & PSW_IPL_MASK) >> PSW_IPL) & 0xf;
     quick = (R[NUM_PSW] & PSW_QIE_MASK) >> PSW_QIE;
-
-    sim_debug(IRQ_MSG, &cpu_dev,
-              "IRQ level = %d, PSW IPL level = %d, nmi = %d\n",
-              ipl, psw_ipl, nmi);
 
     if (ipl <= psw_ipl && !nmi) {
         sim_debug(IRQ_MSG, &cpu_dev, "Ignoring IRQ\n");
@@ -1514,19 +1510,7 @@ t_stat sim_instr(void)
             cpu_write_op(dst, result);
             cpu_set_nz_flags(result, dst);
             cpu_set_c_flag(0);
-            /* TODO: Confirm on real hardware that this is valid.
-               WE32100 manual is unclear. */
-            switch(op_type(dst)) {
-            case HW:
-            case UH:
-                cpu_set_v_flag(result > HALF_MASK);
-                break;
-            case BT:
-            case SB:
-            default:
-                cpu_set_v_flag(result > BYTE_MASK);
-                break;
-            }
+            cpu_set_v_flag_op(result, dst);
             break;
         case ANDW2:
         case ANDH2:
@@ -1757,7 +1741,7 @@ t_stat sim_instr(void)
         case CLRB:
             cpu_write_op(dst, 0);
             cpu_set_n_flag(0);
-            cpu_set_z_flag(-1);
+            cpu_set_z_flag(1);
             cpu_set_c_flag(0);
             cpu_set_v_flag(0);
             break;
@@ -1828,6 +1812,7 @@ t_stat sim_instr(void)
             cpu_write_op(dst, result);
             cpu_set_nz_flags(result, dst);
             cpu_set_c_flag(0);
+            cpu_set_v_flag_op(result, dst);
             break;
         case DIVW3:
         case DIVH3:
@@ -1994,6 +1979,8 @@ t_stat sim_instr(void)
             cpu_write_op(dst, R[0]);
             R[0] = a;
             cpu_set_nz_flags(a, dst);
+            cpu_set_v_flag(0);
+            cpu_set_c_flag(0);
             break;
         case ROTW:
             a = cpu_read_op(src1) & 31;
@@ -2009,6 +1996,8 @@ t_stat sim_instr(void)
             a = cpu_effective_address(src1);
             cpu_write_op(dst, a);
             cpu_set_nz_flags(a, src1);
+            cpu_set_v_flag(0);
+            cpu_set_c_flag(0);
             break;
         case MOVTRW:
             a = cpu_effective_address(src1);
@@ -2133,6 +2122,8 @@ t_stat sim_instr(void)
             a = (cpu_read_op(src1) | cpu_read_op(dst));
             cpu_write_op(dst, a);
             cpu_set_nz_flags(a, dst);
+            cpu_set_c_flag(0);
+            cpu_set_v_flag(0); /* TODO: Fix */
             break;
         case ORW3:
         case ORH3:
@@ -2145,11 +2136,15 @@ t_stat sim_instr(void)
             a = cpu_pop_word();
             cpu_write_op(dst, a);
             cpu_set_nz_flags(a, dst);
+            cpu_set_c_flag(0);
+            cpu_set_v_flag(0);
             break;
         case PUSHAW:
             a = cpu_effective_address(src1);
             cpu_push_word(a);
             cpu_set_nz_flags(a, src1);
+            cpu_set_c_flag(0);
+            cpu_set_v_flag(0);
             break;
         case PUSHW:
             a = cpu_read_op(src1);
@@ -2808,14 +2803,14 @@ void cpu_set_exception(uint8 et, uint8 isc)
 /*
  * Indicate that an IRQ has occured.
  */
-void cpu_set_irq(uint16 ipl, uint8 id, t_bool nmi)
+void cpu_set_irq(uint8 ipl, uint8 id, t_bool nmi)
 {
     if (cpu_irq_ipl > -1) {
         return;
     }
 
-    sim_debug(IRQ_MSG, &cpu_dev, "IRQ: Setting IRQ level %d, NMI=%d\n",
-              ipl, nmi);
+    sim_debug(IRQ_MSG, &cpu_dev, "IRQ: Setting IRQ level %d, id %d, NMI=%d\n",
+              ipl, id, nmi);
 
     cpu_irq_ipl = ipl;
     cpu_irq_id = id;
@@ -2986,6 +2981,25 @@ static SIM_INLINE void cpu_set_c_flag(t_bool val)
         R[NUM_PSW] = R[NUM_PSW] | PSW_C_MASK;
     } else {
         R[NUM_PSW] = R[NUM_PSW] & ~PSW_C_MASK;
+    }
+}
+
+static SIM_INLINE void cpu_set_v_flag_op(t_uint64 val, operand *op)
+{
+    switch(op_type(op)) {
+    case WD:
+    case UW:
+        cpu_set_v_flag(0);
+        break;
+    case HW:
+    case UH:
+        cpu_set_v_flag(val > HALF_MASK);
+        break;
+    case BT:
+    case SB:
+    default:
+        cpu_set_v_flag(val > BYTE_MASK);
+        break;
     }
 }
 

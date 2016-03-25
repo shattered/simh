@@ -371,7 +371,7 @@ instr *cpu_next_instruction(void);
 
 uint8 get_mnemonic(mnemonic **mn_p, uint32 pa);
 uint8 decode_instruction(instr *instr);
-t_bool cpu_handle_irq(uint16 ipl, uint8 id, t_bool nmi);
+t_bool cpu_handle_irq(uint8 ipl, uint8 id, t_bool nmi);
 void cpu_perform_gate(uint32 index1, uint32 index2);
 
 static SIM_INLINE void clear_exceptions();
@@ -399,6 +399,7 @@ static SIM_INLINE void cpu_set_z_flag(t_bool val);
 static SIM_INLINE void cpu_set_n_flag(t_bool val);
 static SIM_INLINE void cpu_set_c_flag(t_bool val);
 static SIM_INLINE void cpu_set_v_flag(t_bool val);
+static SIM_INLINE void cpu_set_v_flag_op(t_uint64 val, operand *op);
 
 static SIM_INLINE uint8 cpu_execution_level();
 static SIM_INLINE void cpu_set_execution_level(uint8 level);

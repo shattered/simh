@@ -443,11 +443,10 @@ t_stat timer_svc(UNIT *uptr)
             csr_data |= CSRCLK;
             cpu_set_irq(15, 15, 0);
             break;
-        case CLK_TIM2:
+        case CLK_TIM2: 
             if (csr_data & CSRPIR8) {
                 cpu_set_irq(8, 8, 0);
             } else if (csr_data & CSRPIR9) {
-                csr_data &= ~(CSRCLK | CSRUART);
                 cpu_set_irq(9, 9, 0);
             }
             break;
@@ -521,33 +520,3 @@ void timer_write(uint32 pa, uint32 val, size_t size)
         ctr->counter = ctr->divider;
     }
 }
-
-/* 100Hz Clock */
-
-/*
-UNIT rtc_unit = { UDATA (&rtc_svc, UNIT_IDLE+UNIT_FIX, sizeof(uint32)), CLK_DELAY };
-
-DEVICE rtc_dev = {
-    "RTC", &rtc_unit, NULL, NULL,
-    1, 0, 8, 4, 0, 32,
-    NULL, NULL, &rtc_reset,
-    NULL, NULL, NULL,
-    NULL, 0, 0, NULL, NULL, NULL, NULL, NULL, NULL,
-    NULL
-};
-
-t_stat rtc_reset(DEVICE *dptr) {
-    sim_register_clock_unit(&rtc_unit);
-    if (!sim_is_active(&rtc_unit)) {
-        sim_activate(&rtc_unit, sim_rtcn_init(CLK_DELAY, CLK_RTC));
-    }
-    return SCPE_OK;
-}
-
-t_stat rtc_svc (UNIT *uptr) {
-
-
-    sim_activate(&rtc_unit, sim_rtcn_calb(RTC_HZ, CLK_RTC));
-    return SCPE_OK;
-}
-*/

@@ -208,7 +208,7 @@ extern DEVICE dmac_dev;
 
 /* Globally scoped CPU functions */
 void cpu_set_exception(uint8 et, uint8 isc);
-void cpu_set_irq(uint16 ipl, uint8 id, t_bool nmi);
+void cpu_set_irq(uint8 ipl, uint8 id, t_bool nmi);
 
 /* Globally scoped IO functions */
 uint32 io_read(uint32 pa, size_t size);
