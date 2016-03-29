@@ -438,17 +438,20 @@ t_stat timer_svc(UNIT *uptr)
 
         switch (ctr->clock_number) {
         case CLK_TIM0:
+            if (csr_data & CSRPIR8) {
+                cpu_set_irq(8, 8, 0);
+            } else if (csr_data & CSRPIR9) {
+                sim_debug(EXECUTE_MSG, &csr_dev,
+                          ">>> Setting IRQ 9 on PIR9 request. csr_data=%04x\n",
+                          csr_data);
+                cpu_set_irq(9, 9, 0);
+            }
             break;
         case CLK_TIM1:
             csr_data |= CSRCLK;
             cpu_set_irq(15, 15, 0);
             break;
         case CLK_TIM2: 
-            if (csr_data & CSRPIR8) {
-                cpu_set_irq(8, 8, 0);
-            } else if (csr_data & CSRPIR9) {
-                cpu_set_irq(9, 9, 0);
-            }
             break;
         }
     } else {

@@ -85,6 +85,7 @@ struct uart_state {
     uint16 c_set;         /* Timer / Counter Setting */
     int32  c_val;         /* Timer / Counter Value */
     t_bool c_en;          /* Counter Enabled */
+    uint8 acr;
     struct port port[2];  /* Port A and B */
 };
 

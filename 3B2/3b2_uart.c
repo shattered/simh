@@ -38,16 +38,17 @@ extern uint16 csr_data;
 UNIT uart_unit = { UDATA(&uart_svc, TT_MODE_7B, 0), CLK_DELAY };
 
 REG uart_reg[] = {
-    { HRDATAD(ISTAT,    u.istat,            8, "Interrupt Status") },
-    { HRDATAD(IMASK,    u.imask,            8, "Interrupt Mask")   },
-    { HRDATAD(CTR,      u.c_set,           16, "Counter Setting")  },
-    { HRDATAD(CTRV,     u.c_val,           16, "Counter Value")    },
-    { HRDATAD(STAT_A,   u.port[0].stat,     8, "Status  (Port A)") },
-    { HRDATAD(CMD_A,    u.port[0].cmd,      8, "Command (Port A)") },
-    { HRDATAD(DATA_A,   u.port[0].buf,      8, "Data    (Port A)") },
-    { HRDATAD(STAT_B,   u.port[1].stat,     8, "Status  (Port B)") },
-    { HRDATAD(CMD_B,    u.port[1].cmd,      8, "Command (Port B)") },
-    { HRDATAD(DATA_B,   u.port[1].buf,      8, "Data    (Port B)") },
+    { HRDATAD(ISTAT,  u.istat,          8, "Interrupt Status")            },
+    { HRDATAD(IMASK,  u.imask,          8, "Interrupt Mask")              },
+    { HRDATAD(ACR,    u.acr,            8, "Auxiliary Control Register")  },
+    { HRDATAD(CTR,    u.c_set,         16, "Counter Setting")             },
+    { HRDATAD(CTRV,   u.c_val,         16, "Counter Value")               },
+    { HRDATAD(STAT_A, u.port[0].stat,   8, "Status  (Port A)")            },
+    { HRDATAD(CMD_A,  u.port[0].cmd,    8, "Command (Port A)")            },
+    { HRDATAD(DATA_A, u.port[0].buf,    8, "Data    (Port A)")            },
+    { HRDATAD(STAT_B, u.port[1].stat,   8, "Status  (Port B)")            },
+    { HRDATAD(CMD_B,  u.port[1].cmd,    8, "Command (Port B)")            },
+    { HRDATAD(DATA_B, u.port[1].buf,    8, "Data    (Port B)")            },
     { NULL }
 };
 
@@ -87,10 +88,19 @@ t_stat uart_svc(UNIT *uptr)
             u.istat |= ISTS_CRI;
             u.c_val = u.c_set;
 
-            /* Set IRQ 9 */
-            /* Flag the CSR with the source of the interrupt */
-            csr_data |= CSRUART;
-            cpu_set_irq(9, 9, 0);
+            /* This is a one-shot, so disable the timer. */
+            /* TODO: Support square-wave mode. */
+            u.c_en = FALSE;
+
+            if (csr_data & CSRPIR9) {
+                /* Set IRQ 9 */
+                /* Flag the CSR with the source of the interrupt */
+                sim_debug(EXECUTE_MSG, &uart_dev,
+                          ">>> Setting IRQ9 on PIR9 UART TIMEOUT. mode=%02x, csr_data=%04x\n",
+                          (u.acr >> 4) & 0x3, csr_data);
+                csr_data |= CSRUART;
+                cpu_set_irq(9, 9, 0);
+            }
         }
     }
 
@@ -172,8 +182,8 @@ uint32 uart_read(uint32 pa, size_t size)
     case 14:
         /* Start Counter Command */
         sim_debug(EXECUTE_MSG, &uart_dev,
-                  "[%08x] >>> STARTING UART TIMER!\n",
-                  R[NUM_PC]);
+                  "[%08x] >>> STARTING UART TIMER! mode=%02x\n",
+                  R[NUM_PC], (u.acr << 4) & 0x3);
         u.c_en = TRUE;
         break;
     case 15:
@@ -198,7 +208,6 @@ void uart_write(uint32 pa, uint32 val, size_t size)
 {
     uint8 reg;
     uint8 mode_ptr;
-    uint8 timer_mode;
 
     reg = pa - UARTBASE;
 
@@ -228,8 +237,7 @@ void uart_write(uint32 pa, uint32 val, size_t size)
         }
         break;
     case 4:  /* Auxiliary Control Register */
-        /* Set the mode of the timer */
-        timer_mode = (val >> 4) & 7;
+        u.acr = val;
         break;
     case 5:
         u.imask = val;
@@ -294,9 +302,14 @@ static SIM_INLINE void uart_update_txi()
         u.istat &= ~ISTS_TBI;                           /* clear int */
     }
 
-    if ((u.istat & u.imask) > 0) {                      /* unmasked ints? */
+    if (u.istat & u.imask) {                            /* unmasked ints? */
         /* TODO: Set interrupt */
+        sim_debug(EXECUTE_MSG, &csr_dev,
+                  ">>> Firing IRQ 9 via UART TX. ISTAT=%02x, IMASK=%02x\n", u.istat, u.imask);
+        csr_data |= CSRUART;
+        cpu_set_irq(9, 9, 0);
     } else {
+        csr_data &= ~CSRUART;
         /* TODO: Clear interrupt */
     }
 

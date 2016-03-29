@@ -414,6 +414,7 @@ static uint32 irq_pop_word();
 static void cpu_context_switch(uint32 pcbp);
 static SIM_INLINE t_bool op_is_psw(operand *op);
 static SIM_INLINE uint32 cpu_next_pc();
-static SIM_INLINE void add(operand *src1, operand *src2, operand *dst);
+static SIM_INLINE void add(t_uint64 a, t_uint64 b, operand *dst);
+static SIM_INLINE void sub(t_uint64 a, t_uint64 b, operand *dst);
 
 #endif

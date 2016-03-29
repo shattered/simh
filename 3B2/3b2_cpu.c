@@ -1496,12 +1496,16 @@ t_stat sim_instr(void)
         case ADDW2:
         case ADDH2:
         case ADDB2:
-            add(src1, dst, dst);
+            a = cpu_read_op(src1);
+            b = cpu_read_op(dst);
+            add(a, b, dst);
             break;
         case ADDW3:
         case ADDH3:
         case ADDB3:
-            add(src1, src2, dst);
+            a = cpu_read_op(src1);
+            b = cpu_read_op(src2);
+            add(a, b, dst);
             break;
         case ALSW3:
             a = cpu_read_op(src2);
@@ -1773,28 +1777,10 @@ t_stat sim_instr(void)
             cpu_set_v_flag(0);
             break;
         case DECW:
-            a = b = cpu_read_op(dst);
-            b--;
-            cpu_write_op(dst, b);
-            cpu_set_nz_flags(b, dst);
-            cpu_set_c_flag((a & WD_MSB) != (b & WD_MSB));
-            cpu_set_v_flag(b == WORD_MASK);
-            break;
         case DECH:
-            a = b = cpu_read_op(dst);
-            b--;
-            cpu_write_op(dst, b);
-            cpu_set_nz_flags(b, dst);
-            cpu_set_c_flag((a & WD_MSB) != (b & HW_MSB));
-            cpu_set_v_flag(b == HALF_MASK);
-            break;
         case DECB:
-            a = b = cpu_read_op(dst);
-            b--;
-            cpu_write_op(dst, b);
-            cpu_set_nz_flags(b, dst);
-            cpu_set_c_flag((a & WD_MSB) != (b & BT_MSB));
-            cpu_set_v_flag(b == BYTE_MASK);
+            a = cpu_read_op(dst);
+            sub(a, 1, dst);
             break;
         case DIVW2:
         case DIVH2:
@@ -1867,22 +1853,10 @@ t_stat sim_instr(void)
             cpu_set_nz_flags(a, dst);
             break;
         case INCW:
-            result = cpu_read_op(dst) + 1;
-            cpu_write_op(dst, (uint32)(result & WORD_MASK));
-            cpu_set_nz_flags(result, dst);
-            cpu_set_v_flag(a == 0x80000000);
-            break;
         case INCH:
-            a = cpu_read_op(dst) + 1;
-            cpu_write_op(dst, a);
-            cpu_set_nz_flags(a, dst);
-            cpu_set_v_flag(a == 0x8000);
-            break;
         case INCB:
-            a = cpu_read_op(dst) + 1;
-            cpu_write_op(dst, a);
-            cpu_set_nz_flags(a, dst);
-            cpu_set_v_flag(a == 0x80);
+            a = cpu_read_op(dst);
+            add(a, 1, dst);
             break;
         case INSFW:
         case INSFH:
@@ -2272,20 +2246,16 @@ t_stat sim_instr(void)
         case SUBW2:
         case SUBH2:
         case SUBB2:
-            a = cpu_read_op(src1);
-            b = cpu_read_op(dst);
-            result = b - a;
-            cpu_write_op(dst, result);
-            cpu_set_nz_flags(result, dst);
+            a = cpu_read_op(dst);
+            b = cpu_read_op(src1);
+            sub(a, b, dst);
             break;
         case SUBW3:
         case SUBH3:
         case SUBB3:
-            a = cpu_read_op(src1);
-            b = cpu_read_op(src2);
-            result = b - a;
-            cpu_write_op(dst, result);
-            cpu_set_nz_flags(result, dst);
+            a = cpu_read_op(src2);
+            b = cpu_read_op(src1);
+            sub(a, b, dst);
             break;
         case RESTORE:
             a = R[NUM_FP] - 28;
@@ -3072,13 +3042,37 @@ static SIM_INLINE uint32 cpu_next_pc()
     return R[NUM_PC] + cpu_ilen;
 }
 
-static SIM_INLINE void add(operand *src1, operand *src2, operand *dst)
+static SIM_INLINE void sub(t_uint64 a, t_uint64 b, operand *dst)
 {
-    t_uint64 a, b;
     t_uint64 result;
 
-    a = cpu_read_op(src1);
-    b = cpu_read_op(src2);
+    result = a - b;
+
+    cpu_write_op(dst, result);
+
+    cpu_set_nz_flags(result, dst);
+    cpu_set_c_flag((uint32)b > (uint32)a);
+
+    switch(op_type(dst)) {
+    case WD:
+    case UW:
+        cpu_set_v_flag(((a ^ b) & (~a ^ result)) & WD_MSB);
+        break;
+    case HW:
+    case UH:
+        cpu_set_v_flag(((a ^ b) & (~a ^ result)) & HW_MSB);
+        break;
+    case BT:
+    case SB:
+        cpu_set_v_flag(((a ^ b) & (~a ^ result)) & BT_MSB);
+        break;
+    }
+}
+
+static SIM_INLINE void add(t_uint64 a, t_uint64 b, operand *dst)
+{
+    t_uint64 result;
+
     result = a + b;
 
     cpu_set_nz_flags(result, dst);
