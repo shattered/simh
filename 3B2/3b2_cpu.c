@@ -2451,6 +2451,13 @@ void cpu_perform_gate(uint32 index1, uint32 index2)
     cpu_set_execution_level(old_lvl);
 }
 
+/*
+ * TODO: Setting 'data' to the effective address is bogus. We're only
+ * doing it because we want to get the address when we trace the
+ * instructions using "SHOW CPU HISTORY". We should just put
+ * effective_address as a field in the operand struct and make
+ * cpu_show_hist smarter.
+ */
 static uint32 cpu_effective_address(operand * op)
 {
     /* Register Deferred */
@@ -2716,6 +2723,9 @@ static void cpu_write_op(operand * op, t_uint64 val)
     }
 
     eff = cpu_effective_address(op);
+    /* TODO: This is inelegant. We re-set data because
+       'cpu_effective_address' messes with it. */
+    op->data = (uint32) val;
 
     switch (op_type(op)) {
     case UW:
