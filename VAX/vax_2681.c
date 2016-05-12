@@ -229,7 +229,11 @@ switch (rg) {
         break;
 
     case 3:                                             /* tx/rx buf A */
+#ifdef DMD5620
+        data = ctx->port[PORT_A].buf;
+#else
         data = ctx->port[PORT_A].buf | (ctx->port[PORT_A].sts << 8);
+#endif
         ctx->port[PORT_A].sts &= ~STS_RXR;
         ctx->ists &= ~ISTS_RAI;
         ua2681_update_rxi (ctx);
@@ -257,7 +261,11 @@ switch (rg) {
         break;
 
     case 11:                                            /* tx/rx buf B */
+#ifdef DMD5620
+        data = ctx->port[PORT_B].buf;
+#else
         data = ctx->port[PORT_B].buf | (ctx->port[PORT_B].sts << 8);
+#endif
         ctx->port[PORT_B].sts &= ~STS_RXR;
         ctx->ists &= ~ISTS_RBI;
         ua2681_update_rxi (ctx);
