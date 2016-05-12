@@ -101,6 +101,8 @@ switch (rg) {
             case 2:
                 ctx->port[PORT_A].cmd &= ~CMD_ERX;
                 ctx->port[PORT_A].sts &= ~STS_RXR;
+//intf ("ua2681_wr: clear RXR (case 2)\r\n");
+
                 break;
 
             case 3:
@@ -235,6 +237,7 @@ switch (rg) {
         data = ctx->port[PORT_A].buf | (ctx->port[PORT_A].sts << 8);
 #endif
         ctx->port[PORT_A].sts &= ~STS_RXR;
+//intf ("ua2681_rd: clear RXR (case 3)\r\n");
         ctx->ists &= ~ISTS_RAI;
         ua2681_update_rxi (ctx);
         break;
@@ -320,6 +323,9 @@ void ua2681_update_rxi (UART2681 *ctx)
 uint8 c;
 t_stat r;
 
+//intf ("ua2681_update_rxi I acmd %02x asts %02x ists %02x opcr %02x\r\n", 
+//	ctx->port[PORT_A].cmd, ctx->port[PORT_A].sts, ctx->ists, ctx->opcr);
+
 if (ctx->port[PORT_A].cmd & CMD_ERX) {
     if (((ctx->port[PORT_A].sts & STS_RXR) == 0) &&
        (ctx->port[PORT_A].get_char != NULL)) {
@@ -331,14 +337,19 @@ if (ctx->port[PORT_A].cmd & CMD_ERX) {
             }
         else {
             ctx->port[PORT_A].sts &= ~STS_RXR;
+//intf ("ua2681_update_rxi: clear RXR (case 4)\r\n");
             ctx->ists &= ~ISTS_RAI;
             }
         }
     }
 else {
     ctx->port[PORT_A].sts &= ~STS_RXR;
+//intf ("ua2681_update_rxi: clear RXR (case 5)\r\n");
     ctx->ists &= ~ISTS_RAI;
     }
+
+//intf ("ua2681_update_rxi O acmd %02x asts %02x ists %02x opcr %02x r %d\r\n", 
+//	ctx->port[PORT_A].cmd, ctx->port[PORT_A].sts, ctx->ists, ctx->opcr, r);
 
 if (ctx->port[PORT_B].cmd & CMD_ERX) {
     if (((ctx->port[PORT_B].sts & STS_RXR) == 0) &&
