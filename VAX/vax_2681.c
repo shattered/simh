@@ -367,19 +367,23 @@ uint8 t = ctx->oport;
 
 if (ctx->opcr & 0x80) {
     t &= ~0x80;
-    if (ctx->ists & ISTS_TBI) t |= 0x80;
+    if (ctx->port[PORT_B].sts & STS_TXR)
+	t |= 0x80;
     }
 if (ctx->opcr & 0x40) {
     t &= ~0x40;
-    if (ctx->ists & ISTS_TAI) t |= 0x40;
+    if (ctx->port[PORT_A].sts & STS_TXR)
+	t |= 0x40;
     }
 if (ctx->opcr & 0x20) {
     t &= ~0x20;
-    if (ctx->ists & ISTS_RBI) t |= 0x20;
+    if (ctx->port[PORT_B].sts & STS_RXR)
+	t |= 0x20;
     }
 if (ctx->opcr & 0x10) {
     t &= ~0x10;
-    if (ctx->ists & ISTS_RAI) t |= 0x10;
+    if (ctx->port[PORT_A].sts & STS_RXR)
+	t |= 0x10;
     }
 
 return t ^ 0xff;
