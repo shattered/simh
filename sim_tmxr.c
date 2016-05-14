@@ -1171,6 +1171,13 @@ for (i = 0; i < mp->lines; i++) {                       /* check each line in se
                             lp->connecting = 0;
                             lp->ipad = (char *)realloc (lp->ipad, 1+strlen (lp->destination));
                             strcpy (lp->ipad, lp->destination);
+                            lp->notelnet = mp->notelnet;        /* apply mux default telnet setting */
+                            if (!lp->notelnet) {
+                                sim_write_sock (newsock, (char *)mantra, sizeof(mantra));
+                                tmxr_debug (TMXR_DBG_XMT, lp, "Sending", (char *)mantra, sizeof(mantra));
+                                lp->telnet_sent_opts = (uint8 *)realloc (lp->telnet_sent_opts, 256);
+                                memset (lp->telnet_sent_opts, 0, 256);
+                            }
                             lp->cnms = sim_os_msec ();
                             sim_getnames_sock (lp->sock, &sockname, &peername);
                             sprintf (msg, "tmxr_poll_conn() - Outgoing Line Connection to %s (%s->%s) established", lp->destination, sockname, peername);
