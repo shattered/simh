@@ -2426,7 +2426,7 @@ void cpu_perform_gate(uint32 index1, uint32 index2)
     old_psw = R[NUM_PSW];
 
     /* Save address of next instruction and PSW to stack */
-    cpu_push_word(R[NUM_PC] + 2);
+    cpu_push_word(R[NUM_PC]);
     cpu_push_word(R[NUM_PSW]);
 
     /* TODO : Possibly generate stack-bounds exception again */
