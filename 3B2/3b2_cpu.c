@@ -1370,8 +1370,8 @@ t_bool cpu_handle_irq(uint8 ipl, uint8 id, t_bool nmi)
 
     /* Full interrupts require a complete process switch */
     sim_debug(IRQ_MSG, &cpu_dev, "FULL INTERRUPT. "
-              "CUR PCBP=%08x, NEW PCBP=%08x\n",
-              R[NUM_PCBP], new_pcbp);
+              "CUR PSW=%08x, CUR PCBP=%08x, NEW PCBP=%08x\n",
+              R[NUM_PSW], R[NUM_PCBP], new_pcbp);
 
     /* Context switch */
     cpu_context_switch_1(new_pcbp);
@@ -1463,7 +1463,7 @@ t_stat sim_instr(void)
             switch(et) {
             case NORMAL_EXCEPTION:
                 sim_debug(EXECUTE_MSG, &cpu_dev,
-                          ">>> [%08x] NORMAL EXCEPTION: isc=%d\n",
+                          ">>> [%08x] NORMAL EXCEPTION DURING DECODE: isc=%d\n",
                           R[NUM_PC], isc);
                 cpu_perform_gate(0, isc << 3);
                 break;
@@ -2374,7 +2374,7 @@ t_stat sim_instr(void)
             switch(et) {
             case NORMAL_EXCEPTION:
                 sim_debug(EXECUTE_MSG, &cpu_dev,
-                          ">>> [%08x] NORMAL EXCEPTION: isc=%d\n",
+                          ">>> [%08x] NORMAL EXCEPTION DURING EXECUTE: isc=%d\n",
                           R[NUM_PC], isc);
                 cpu_perform_gate(0, isc << 3);
                 break;
