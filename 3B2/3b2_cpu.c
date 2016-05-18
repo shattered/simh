@@ -2669,12 +2669,18 @@ static uint32 cpu_read_op(operand * op)
         op->data = data;
         return data;
     case HW: /* Signed Halfword */
+        data = sign_extend_h(read_h(eff));
+        op->data = data;
+        return data;
     case UH: /* Unsigned Halfword */
         data = read_h(eff);
         op->data = data;
         return data;
-    case BT: /* Unsigned Byte */
     case SB: /* Signed Byte */
+        data = sign_extend_b(read_b(eff));
+        op->data = data;
+        return data;
+    case BT: /* Unsigned Byte */
         data = read_b(eff);
         op->data = data;
         return data;
