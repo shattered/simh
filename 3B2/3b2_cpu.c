@@ -1611,13 +1611,13 @@ t_stat sim_instr(void)
             cpu_set_v_flag(0);
             break;
         case BLH:
-            if ((cpu_n_flag() == 1) & (cpu_z_flag() == 0)) {
+            if ((cpu_n_flag() == 1) && (cpu_z_flag() == 0)) {
                 R[NUM_PC] += (int16)(dst->embedded.h);
                 continue;
             }
             break;
         case BLB:
-            if (cpu_n_flag() == 1 && cpu_z_flag() == 0) {
+            if ((cpu_n_flag() == 1) && (cpu_z_flag() == 0)) {
                 R[NUM_PC] += (int8)(dst->embedded.b);
                 continue;
             }
@@ -1629,7 +1629,7 @@ t_stat sim_instr(void)
             }
             break;
         case BLEB:
-            if ((cpu_c_flag() | cpu_z_flag()) == 1) {
+            if ((cpu_n_flag() | cpu_z_flag()) == 1) {
                 R[NUM_PC] += (int8)(dst->embedded.b);
                 continue;
             }
