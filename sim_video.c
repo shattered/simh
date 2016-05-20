@@ -1695,7 +1695,7 @@ while (vid_active) {
                     sim_debug (SIM_VID_DBG_VIDEO|SIM_VID_DBG_KEY|SIM_VID_DBG_MOUSE|SIM_VID_DBG_CURSOR, vid_dev, "vid_thread() - Window Event: %d - %s\n", event.window.event, windoweventtypes[event.window.event]);
                     switch (event.window.event) {
                         case SDL_WINDOWEVENT_ENTER:
-                             if (vid_flags & SIM_VID_INPUTCAPTURED)
+                             if ((vid_flags & SIM_VID_INPUTCAPTURED) && vid_mouse_captured)
                                  SDL_WarpMouseInWindow (NULL, vid_width/2, vid_height/2);   /* center position */
                             break;
                         case SDL_WINDOWEVENT_EXPOSED:
