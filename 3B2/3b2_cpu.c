@@ -1268,6 +1268,9 @@ void cpu_context_switch_2(uint32 new_pcbp)
     R[NUM_PSW] &= ~PSW_ET_MASK;
     R[NUM_PSW] |= (3 << PSW_ET);
 
+    /* XXX magic */
+    R[NUM_PSW] &= ~PSW_R_MASK;
+
     /* Call XSWITCH_THREE() microroutine to do block moves */
     if (R[NUM_PSW] & PSW_R_MASK) {
 
