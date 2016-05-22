@@ -31,6 +31,8 @@ UNIT uart_unit = { UDATA(&uart_svc, UNIT_ATTABLE|TT_MODE_7B, 0), 1000L };
 TMLN uart_ldsc[1] = { { 0 } };
 TMXR uart_desc = { 1, 0, 0, uart_ldsc };
 uint8 uart_oport = 0;
+t_bool kb_shift = 0;
+t_bool kb_ctrl = 0;
 
 DEVICE uart_dev = {
     "UART", &uart_unit, NULL, NULL,
@@ -175,9 +177,25 @@ void mouse_buttons (SIM_MOUSE_EVENT *ev)
 
 /* mapping table via 5620rom/src/lib/libsys/kbd.c */
 
-uint8 kb_map_key (int key)
+t_bool kb_map_key (uint32 key, uint32 state, uint8 *c)
 {
 uint8 lk_key;
+
+switch (key) {
+    case SIM_KEY_SHIFT_R:
+    case SIM_KEY_SHIFT_L:
+	kb_shift = (state == SIM_KEYPRESS_UP) ? FALSE : TRUE;
+	return SCPE_EOF;
+
+    case SIM_KEY_CTRL_R:
+    case SIM_KEY_CTRL_L:
+	kb_ctrl = (state == SIM_KEYPRESS_UP) ? FALSE : TRUE;
+	return SCPE_EOF;
+}
+
+if (state == SIM_KEYPRESS_UP) {
+    return SCPE_EOF;
+}
 
 switch (key) {
 
@@ -223,192 +241,199 @@ switch (key) {
         lk_key = 0xae;
         break;
 
+#define KB_SHIFT(c,s)		(kb_shift?s:c)
+#define KB_SHIFT_CTRL(c)	(kb_ctrl?(c-0x60):(kb_shift?(c-0x20):c))
+#define KB_SHIFT_CTRL2(c)	(kb_ctrl?(c-0x40):(kb_shift?(c+0x20):c))
+
+    /*
+     * modifiable keys
+     */
     case SIM_KEY_0:
-        lk_key = '0';
+        lk_key = KB_SHIFT('0',')');
         break;
 
     case SIM_KEY_1:
-        lk_key = '1';
+        lk_key = KB_SHIFT('1','!');
         break;
 
     case SIM_KEY_2:
-        lk_key = '2';
+        lk_key = KB_SHIFT('2','@');
         break;
 
     case SIM_KEY_3:
-        lk_key = '3';
+        lk_key = KB_SHIFT('3','#');
         break;
 
     case SIM_KEY_4:
-        lk_key = '4';
+        lk_key = KB_SHIFT('4','$');
         break;
 
     case SIM_KEY_5:
-        lk_key = '5';
+        lk_key = KB_SHIFT('5','%');
         break;
 
     case SIM_KEY_6:
-        lk_key = '6';
+        lk_key = KB_SHIFT('6','^');
         break;
 
     case SIM_KEY_7:
-        lk_key = '7';
+        lk_key = KB_SHIFT('7','&');
         break;
 
     case SIM_KEY_8:
-        lk_key = '8';
+        lk_key = KB_SHIFT('8','*');
         break;
 
     case SIM_KEY_9:
-        lk_key = '9';
+        lk_key = KB_SHIFT('9','(');
         break;
 
     case SIM_KEY_A:
-        lk_key = 'a';
+        lk_key = KB_SHIFT_CTRL('a');
         break;
 
     case SIM_KEY_B:
-        lk_key = 'b';
+        lk_key = KB_SHIFT_CTRL('b');
         break;
 
     case SIM_KEY_C:
-        lk_key = 'c';
+        lk_key = KB_SHIFT_CTRL('c');
         break;
 
     case SIM_KEY_D:
-        lk_key = 'd';
+        lk_key = KB_SHIFT_CTRL('d');
         break;
 
     case SIM_KEY_E:
-        lk_key = 'e';
+        lk_key = KB_SHIFT_CTRL('e');
         break;
 
     case SIM_KEY_F:
-        lk_key = 'f';
+        lk_key = KB_SHIFT_CTRL('f');
         break;
 
     case SIM_KEY_G:
-        lk_key = 'g';
+        lk_key = KB_SHIFT_CTRL('g');
         break;
 
     case SIM_KEY_H:
-        lk_key = 'h';
+        lk_key = KB_SHIFT_CTRL('h');
         break;
 
     case SIM_KEY_I:
-        lk_key = 'i';
+        lk_key = KB_SHIFT_CTRL('i');
         break;
 
     case SIM_KEY_J:
-        lk_key = 'j';
+        lk_key = KB_SHIFT_CTRL('j');
         break;
 
     case SIM_KEY_K:
-        lk_key = 'k';
+        lk_key = KB_SHIFT_CTRL('k');
         break;
 
     case SIM_KEY_L:
-        lk_key = 'l';
+        lk_key = KB_SHIFT_CTRL('l');
         break;
 
     case SIM_KEY_M:
-        lk_key = 'm';
+        lk_key = KB_SHIFT_CTRL('m');
         break;
 
     case SIM_KEY_N:
-        lk_key = 'n';
+        lk_key = KB_SHIFT_CTRL('n');
         break;
 
     case SIM_KEY_O:
-        lk_key = 'o';
+        lk_key = KB_SHIFT_CTRL('o');
         break;
 
     case SIM_KEY_P:
-        lk_key = 'p';
+        lk_key = KB_SHIFT_CTRL('p');
         break;
 
     case SIM_KEY_Q:
-        lk_key = 'q';
+        lk_key = KB_SHIFT_CTRL('q');
         break;
 
     case SIM_KEY_R:
-        lk_key = 'r';
+        lk_key = KB_SHIFT_CTRL('r');
         break;
 
     case SIM_KEY_S:
-        lk_key = 's';
+        lk_key = KB_SHIFT_CTRL('s');
         break;
 
     case SIM_KEY_T:
-        lk_key = 't';
+        lk_key = KB_SHIFT_CTRL('t');
         break;
 
     case SIM_KEY_U:
-        lk_key = 'u';
+        lk_key = KB_SHIFT_CTRL('u');
         break;
 
     case SIM_KEY_V:
-        lk_key = 'v';
+        lk_key = KB_SHIFT_CTRL('v');
         break;
 
     case SIM_KEY_W:
-        lk_key = 'w';
+        lk_key = KB_SHIFT_CTRL('w');
         break;
 
     case SIM_KEY_X:
-        lk_key = 'x';
+        lk_key = KB_SHIFT_CTRL('x');
         break;
 
     case SIM_KEY_Y:
-        lk_key = 'y';
+        lk_key = KB_SHIFT_CTRL('y');
         break;
 
     case SIM_KEY_Z:
-        lk_key = 'z';
+        lk_key = KB_SHIFT_CTRL('z');
         break;
 
     case SIM_KEY_BACKQUOTE:
-        lk_key = '`';
+        lk_key = KB_SHIFT('`','~');
         break;
 
     case SIM_KEY_MINUS:
-        lk_key = '-';
+        lk_key = KB_SHIFT('-','_');
         break;
 
     case SIM_KEY_EQUALS:
-        lk_key = '=';
+        lk_key = KB_SHIFT('=','+');
         break;
 
     case SIM_KEY_LEFT_BRACKET:
-        lk_key = '[';
+        lk_key = KB_SHIFT_CTRL2('[');
         break;
 
     case SIM_KEY_RIGHT_BRACKET:
-        lk_key = ']';
+        lk_key = KB_SHIFT_CTRL2(']');
         break;
 
     case SIM_KEY_SEMICOLON:
-        lk_key = ';';
+        lk_key = KB_SHIFT(';',':');
         break;
 
     case SIM_KEY_SINGLE_QUOTE:
-        lk_key = 0x27;
+        lk_key = KB_SHIFT(0x27,'"');
         break;
 
     case SIM_KEY_BACKSLASH:
-        lk_key = '\\';
+        lk_key = KB_SHIFT('\\','|');
         break;
 
     case SIM_KEY_COMMA:
-        lk_key = ',';
+        lk_key = KB_SHIFT(',','<');
         break;
 
     case SIM_KEY_PERIOD:
-        lk_key = '.';
+        lk_key = KB_SHIFT('.','>');
         break;
 
     case SIM_KEY_SLASH:
-        lk_key = '/';
+        lk_key = KB_SHIFT('/','?');
         break;
 
     case SIM_KEY_BACKSPACE:
@@ -447,7 +472,7 @@ switch (key) {
         lk_key = 0xc6;
         break;
 
-    case SIM_KEY_DELETE:	// del
+    case SIM_KEY_DELETE:// del
         lk_key = 0xfe;
         break;
 
@@ -463,6 +488,10 @@ switch (key) {
         lk_key = 0xe5;
         break;
 
+    case SIM_KEY_NUM_LOCK:
+        lk_key = 0xb2;
+        break;
+
 #if 0
     case SIM_KEY_XXX:	// break / discon
         lk_key = 0xaf;
@@ -470,37 +499,36 @@ switch (key) {
 #endif
 
     case SIM_KEY_SPACE:
-        lk_key = ' ';
+        lk_key = kb_ctrl?'\0':' ';
         break;
 
     case SIM_KEY_UNKNOWN:
-        lk_key = '\0';
+	return SCPE_EOF;
         break;
 
     default:
-        lk_key = '\0';
+	return SCPE_EOF;
         break;
     }
-return lk_key;
+*c = lk_key;
+return SCPE_OK;
 }
 
 t_stat kb_rd (uint8 *c)
 {
-	SIM_KEY_EVENT ev;
+    SIM_KEY_EVENT ev;
+    t_bool rc;
 
-	if (vid_poll_kb (&ev) != SCPE_OK) {
-		*c = 0;
-		return SCPE_EOF;
-	}
+    if (vid_poll_kb (&ev) != SCPE_OK) {
+	*c = 0;
+	return SCPE_EOF;
+    }
 
-        if (ev.state != SIM_KEYPRESS_DOWN) {
-		*c = 0;
-		return SCPE_EOF;
-	}
-
-	*c = kb_map_key (ev.key);
+    rc = kb_map_key (ev.key, ev.state, c);
+    if (rc == SCPE_OK) {
 	sim_debug(READ_MSG, &uart_dev, "from kbrd: '%02x'\n", *c);
-	return (*c) ? SCPE_OK : SCPE_EOF;
+    }
+    return rc;
 }
 
 t_stat ln_rd (uint8 *c)

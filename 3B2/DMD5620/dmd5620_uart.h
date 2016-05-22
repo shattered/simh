@@ -52,7 +52,7 @@ void uart_vsync (uint32 set);
 void mouse_buttons (SIM_MOUSE_EVENT *ev);
 t_stat kb_rd (uint8 *c);
 t_stat kb_wr (uint8 c);
-uint8 kb_map_key (int key);
+t_bool kb_map_key (uint32 key, uint32 state, uint8 *c);
 t_stat ln_rd (uint8 *c);
 t_stat ln_wr (uint8 c);
 
