@@ -548,12 +548,12 @@ t_stat ln_rd (uint8 *c)
 
 t_stat ln_wr (uint8 c)
 {
-    uint8 temp;
+    t_stat temp;
 
-    sim_debug(WRITE_MSG, &uart_dev, "to  tmxr: '%02x'\n", temp);
+    sim_debug(WRITE_MSG, &uart_dev, "to  tmxr: '%02x'\n", c);
     temp = tmxr_putc_ln (&uart_ldsc[0], c);
     tmxr_poll_tx (&uart_desc);
-	return temp;
+    return temp;
 }
 
 /* Implementation for the interrupt controller */
