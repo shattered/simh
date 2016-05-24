@@ -1890,9 +1890,10 @@ t_stat sim_instr(void)
         case INSFB:
             width = (cpu_read_op(src1) & 0x1f) + 1;
             offset = cpu_read_op(src2) & 0x1f;
-            a = cpu_read_op(src3);        /* src */
-            b = cpu_read_op(dst);         /* dst */
             mask = (1 << width) - 1;
+
+            a = cpu_read_op(src3) & mask; /* src */
+            b = cpu_read_op(dst);         /* dst */
 
             b &= ~(mask << offset);
             b |= (a << offset);
