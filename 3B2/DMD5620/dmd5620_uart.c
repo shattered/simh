@@ -448,27 +448,57 @@ switch (key) {
         lk_key = 0xe7;
         break;
 
+    case SIM_KEY_KP_LEFT:
+        lk_key = '4';
+        break;
+
+    case SIM_KEY_KP_5:
+        lk_key = '5';
+        break;
+
+    case SIM_KEY_KP_RIGHT:
+        lk_key = '6';
+        break;
+
+    case SIM_KEY_KP_HOME:
+        lk_key = '7';
+        break;
+
+    case SIM_KEY_KP_UP:
+        lk_key = '8';
+        break;
+
+    case SIM_KEY_KP_PAGE_UP:
+        lk_key = '9';
+        break;
+
     case SIM_KEY_HOME:	// left-up arrow
+    case SIM_KEY_KP_END:
         lk_key = 0xc0;
         break;
 
     case SIM_KEY_UP:	// up arrow
+    case SIM_KEY_KP_DOWN:
         lk_key = 0xc1;
         break;
 
     case SIM_KEY_DOWN:	// down arrow
+    case SIM_KEY_KP_INSERT:
         lk_key = 0xc2;
         break;
 
     case SIM_KEY_RIGHT:	// right arrow
+    case SIM_KEY_KP_DELETE:
         lk_key = 0xc3;
         break;
 
     case SIM_KEY_LEFT:	// left arrow
+    case SIM_KEY_KP_SUBTRACT:
         lk_key = 0xc4;
         break;
 
     case SIM_KEY_END:	// home down arrow
+    case SIM_KEY_KP_PAGE_DOWN:
         lk_key = 0xc6;
         break;
 
