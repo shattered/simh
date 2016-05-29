@@ -1284,7 +1284,7 @@ PDP11 = ${PDP11D}/pdp11_fp.c ${PDP11D}/pdp11_cpu.c ${PDP11D}/pdp11_dz.c \
 	${PDP11D}/pdp11_vt.c ${PDP11D}/pdp11_td.c ${PDP11D}/pdp11_io_lib.c \
 	${PDP11D}/pdp11_rom.c ${PDP11D}/pdp11_ch.c $(DISPLAYL) $(DISPLAYVT) \
 	${PDP11D}/pdp11_ng.c ${PDP11D}/pdp11_daz.c $(DISPLAYNG)
-PDP11_OPT = -DVM_PDP11 -I ${PDP11D} ${NETWORK_OPT} $(DISPLAY_OPT)
+PDP11_OPT = -DVM_PDP11 -DCYR_CTLN_CTLO -I ${PDP11D} ${NETWORK_OPT} $(DISPLAY_OPT)
 
 
 UC15D = PDP11

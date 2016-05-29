@@ -85,6 +85,7 @@ int32 clk_fie = 0;                                      /* force IE = 1 */
 int32 clk_fnxm = 0;                                     /* force NXM on reg */
 int32 tmxr_poll = CLK_DELAY;                            /* term mux poll */
 int32 tmr_poll = CLK_DELAY;                             /* timer poll */
+int32 tto_charconv = 0;
 
 t_stat tti_rd (int32 *data, int32 PA, int32 access);
 t_stat tti_wr (int32 data, int32 PA, int32 access);
@@ -426,12 +427,72 @@ return SCPE_NXM;
 
 t_stat tto_svc (UNIT *uptr)
 {
-int32 c;
-t_stat r;
+int32 c = uptr->buf;
 
-c = sim_tt_outcvt (uptr->buf, TT_GET_MODE (uptr->flags));
+#ifdef CYR_CTLN_CTLO
+c &= 0177;
+if (c == ('N' & 037)) {
+    tto_charconv = 1;
+    c = -1;
+} else if (c == ('O' & 037)) {
+    tto_charconv = 0;
+    c = -1;
+} else if (tto_charconv && c >= '@') {
+#ifdef _WIN32
+    static uint8 tab[0100] = {
+#if 0
+        /* Codepage 1251 */
+        0376, 0340, 0341, 0366, 0344, 0345, 0364, 0343, /* @ABCDEFG */
+        0365, 0350, 0351, 0352, 0353, 0354, 0355, 0356, /* HIJKLMNO */
+        0357, 0377, 0360, 0361, 0362, 0363, 0346, 0342, /* PQRSTUVW */
+        0374, 0373, 0347, 0370, 0375, 0371, 0367, 0372, /* XYZ[\]^_ */
+        0336, 0300, 0301, 0326, 0304, 0305, 0324, 0303, /* `abcdefg */
+        0325, 0310, 0311, 0312, 0313, 0314, 0315, 0316, /* hijklmno */
+        0317, 0337, 0320, 0321, 0322, 0323, 0306, 0302, /* pqrstuvw */
+        0334, 0333, 0307, 0330, 0335, 0331, 0327, 0332, /* xyz{|}~  */
+#else
+        /* Codepage 866 */
+        0356, 0240, 0241, 0346, 0244, 0245, 0344, 0243, /* @ABCDEFG */
+        0345, 0250, 0251, 0252, 0253, 0254, 0255, 0256, /* HIJKLMNO */
+        0257, 0357, 0340, 0341, 0342, 0343, 0246, 0242, /* PQRSTUVW */
+        0354, 0353, 0247, 0350, 0355, 0351, 0347, 0352, /* XYZ[\]^_ */
+        0236, 0200, 0201, 0226, 0204, 0205, 0224, 0203, /* `abcdefg */
+        0225, 0210, 0211, 0212, 0213, 0214, 0215, 0216, /* hijklmno */
+        0217, 0237, 0220, 0221, 0222, 0223, 0206, 0202, /* pqrstuvw */
+        0234, 0233, 0207, 0230, 0235, 0231, 0227, 0232, /* xyz{|}~  */
+#endif
+        };
+    c = tab [c - '@'];
+#else /* _WIN32 */
+    /* UTF-8 */
+    static const char *tab[0100] = {
+        "ю", "а", "б", "ц", "д", "е", "ф", "г",         /* @ABCDEFG */
+        "х", "и", "й", "к", "л", "м", "н", "о",         /* HIJKLMNO */
+        "п", "я", "р", "с", "т", "у", "ж", "в",         /* PQRSTUVW */
+        "ь", "ы", "з", "ш", "э", "щ", "ч", "ъ",         /* XYZ[\]^_ */
+        "Ю", "А", "Б", "Ц", "Д", "Е", "Ф", "Г",         /* `abcdefg */
+        "Х", "И", "Й", "К", "Л", "М", "Н", "О",         /* hijklmno */
+        "П", "Я", "Р", "С", "Т", "У", "Ж", "В",         /* pqrstuvw */
+        "Ь", "Ы", "З", "Ш", "Э", "Щ", "Ч", "Ъ",         /* xyz{|}~  */
+        };
+    const char *str = tab[c-'@'];
+    t_stat r = sim_putchar_s (str[0]);
+    if (r != SCPE_OK) {                             /* output; error? */
+        sim_activate (uptr, uptr->wait);            /* try again */
+        return ((r == SCPE_STALL)? SCPE_OK: r);     /* !stall? report */
+        }
+    for (c=1; str[c]; c++)
+        sim_putchar (str[c]);
+    c = -1;
+#endif /* _WIN32 */
+    }
+#else /* CYR_CTLN_CTLO */
+c = sim_tt_outcvt (c, TT_GET_MODE (uptr->flags));
+#endif /* CYR_CTLN_CTLO */
+
 if (c >= 0) {
-    if ((r = sim_putchar_s (c)) != SCPE_OK) {           /* output; error? */
+    t_stat r = sim_putchar_s (c);
+    if (r != SCPE_OK) {                             /* output; error? */
         sim_activate (uptr, uptr->wait);                /* try again */
         return ((r == SCPE_STALL)? SCPE_OK: r);         /* !stall? report */
         }
