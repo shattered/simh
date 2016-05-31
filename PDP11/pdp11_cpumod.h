@@ -55,6 +55,10 @@
 #define MM0_F           0160157
 #define MM3_F           0000060
 
+#define SOP_DVK2        (BUS_Q|OPT_EIS)
+#define OPT_DVK2        0
+#define PSW_DVK2        0000377
+
 #define SOP_1123P       (BUS_Q|OPT_EIS|OPT_FPP|OPT_MMU)
 #define OPT_1123P       (OPT_FPP|OPT_CIS)
 
@@ -132,7 +136,7 @@
 #define SOP_1194        (BUS_U|OPT_EIS|OPT_FPP|OPT_MMU|OPT_UBM|OPT_RH11)
 #define OPT_1194        (OPT_CIS)
 
-#define MOD_MAX         20
+#define MOD_MAX         22
 
 /* MFPT codes */
 

@@ -615,6 +615,7 @@ MTAB cpu_mod[] = {
     { MTAB_XTD|MTAB_VDV, MOD_1184, NULL, "URH11", &cpu_set_model },
     { MTAB_XTD|MTAB_VDV, MOD_1170, NULL, "URH70", &cpu_set_model },
     { MTAB_XTD|MTAB_VDV, MOD_1145, NULL, "U18", &cpu_set_model },
+    { MTAB_XTD|MTAB_VDV, MOD_DVK2, NULL, "DVK2", &cpu_set_model },
     { MTAB_XTD|MTAB_VDV, OPT_EIS, NULL, "EIS", &cpu_set_opt },
     { MTAB_XTD|MTAB_VDV, OPT_EIS, NULL, "NOEIS", &cpu_clr_opt },
     { MTAB_XTD|MTAB_VDV, OPT_FIS, NULL, "FIS", &cpu_set_opt },

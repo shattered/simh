@@ -133,6 +133,7 @@
 #define MOD_1193        18
 #define MOD_1194        19
 #define MOD_T           20
+#define MOD_DVK2        21
 
 #define CPUT_03         (1u << MOD_1103)                /* LSI-11 */
 #define CPUT_04         (1u << MOD_1104)                /* 11/04 */
@@ -155,6 +156,7 @@
 #define CPUT_93         (1u << MOD_1193)                /* 11/93 */
 #define CPUT_94         (1u << MOD_1194)                /* 11/94 */
 #define CPUT_T          (1u << MOD_T)                   /* T-11 */
+#define CPUT_DVK2       (1u << MOD_DVK2)                /* DVK-2 */
 
 #define CPUT_F          (CPUT_23|CPUT_23P|CPUT_24)      /* all F11's */
 #define CPUT_J          (CPUT_53|CPUT_73|CPUT_73B| \
@@ -219,15 +221,15 @@
 #define HAS_DR          (CPUT_04|CPUT_05|CPUT_20|CPUT_24|CPUT_34| \
                          CPUT_40|CPUT_44|CPUT_45|CPUT_60|CPUT_70)
 #define HAS_RTT         (CPUT_03|CPUT_04|CPUT_F|CPUT_34|CPUT_40| \
-                         CPUT_44|CPUT_45|CPUT_60|CPUT_70|CPUT_J|CPUT_T)
+                         CPUT_44|CPUT_45|CPUT_60|CPUT_70|CPUT_J|CPUT_T|CPUT_DVK2)
 #define HAS_SXS         (CPUT_03|CPUT_F|CPUT_34|CPUT_40|CPUT_44| \
-                         CPUT_45|CPUT_60|CPUT_70|CPUT_J|CPUT_T)
+                         CPUT_45|CPUT_60|CPUT_70|CPUT_J|CPUT_T|CPUT_DVK2)
 #define HAS_MARK        (CPUT_03|CPUT_F|CPUT_34|CPUT_40|CPUT_44| \
-                         CPUT_45|CPUT_60|CPUT_70|CPUT_J)
+                         CPUT_45|CPUT_60|CPUT_70|CPUT_J|CPUT_DVK2)
 #define HAS_SPL         (CPUT_44|CPUT_45|CPUT_70|CPUT_J)
 #define HAS_MXPY        (CPUT_F|CPUT_34|CPUT_40|CPUT_44|CPUT_45| \
                          CPUT_60|CPUT_70|CPUT_J)
-#define HAS_MXPS        (CPUT_03|CPUT_F|CPUT_34|CPUT_J|CPUT_T)
+#define HAS_MXPS        (CPUT_03|CPUT_F|CPUT_34|CPUT_J|CPUT_T|CPUT_DVK2)
 #define HAS_MFPT        (CPUT_F|CPUT_44|CPUT_J|CPUT_T)
 #define HAS_CSM         (CPUT_44|CPUT_J)
 #define HAS_TSWLK       (CPUT_J)

@@ -207,7 +207,11 @@ CPUTAB cpu_tab[MOD_MAX] = {
     { "11/93", SOP_1193, OPT_1193, MAXMEMSIZE, PSW_J,
        MFPT_J, PAR_J, PDR_J, MM0_J, MM3_J },
     { "11/94", SOP_1194, OPT_1194, MAXMEMSIZE, PSW_J,
-       MFPT_J, PAR_J, PDR_J, MM0_J, MM3_J }
+       MFPT_J, PAR_J, PDR_J, MM0_J, MM3_J },
+    { "T-11",  SOP_DVK2, OPT_DVK2, INIMEMSIZE, PSW_DVK2,
+       0, 0, 0, 0, 0 },
+    { "DVK2",  SOP_DVK2, OPT_DVK2, INIMEMSIZE, PSW_DVK2,
+       0, 0, 0, 0, 0 }
     };
 
 CNFTAB cnf_tab[] = {
