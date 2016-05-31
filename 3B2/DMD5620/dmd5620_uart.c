@@ -89,7 +89,7 @@ uint32 uart_read(uint32 pa, size_t size)
     uint8 reg;
     uint32 data;
 
-    reg = (pa - UARTBASE - 3) / 4;
+    reg = (pa - UARTBASE) >> 2;
 
     data = ua2681_rd (&uart_chip, reg);
 
@@ -104,7 +104,8 @@ void uart_write(uint32 pa, uint32 val, size_t size)
     uint8 mode_ptr;
     uint8 timer_mode;
 
-    reg = (pa - UARTBASE - 3) / 4;
+    reg = (pa - UARTBASE) >> 2;
+
     ua2681_wr (&uart_chip, reg, val);
 
     if (!(reg == 10 && val == 0))
