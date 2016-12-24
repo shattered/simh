@@ -260,8 +260,12 @@ switch ((PA >> 1) & 1) {                                /* decode PA<1> */
         if ((rx_state == EMPTY) && (rx_csr & RXCS_TR)) {/* empty? */
             sim_activate (&rx_unit[0], rx_xwait);
             rx_csr = rx_csr & ~RXCS_TR;                 /* clear xfer */
+            *data = rx_dbr;                             /* return data */
             }
-        *data = rx_dbr;                                 /* return data */
+        else if ((rx_csr & RXCS_TR) || rx_bptr == 0)
+            *data = rx_dbr;                             /* return data */
+        else
+            *data = 0;
         break;
         }                                               /* end switch PA */
 
