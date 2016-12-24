@@ -96,7 +96,7 @@
 #define RXCS_ERR        (1u << RXCS_V_ERR)
 #define RXCS_ROUT       (RXCS_ERR+RXCS_TR+RXCS_IE+RXCS_DONE)
 #define RXCS_IMP        (RXCS_ROUT+RXCS_DRV+RXCS_FUNC)
-#define RXCS_RW         (RXCS_IE)                       /* read/write */
+#define RXCS_RW         (CSR_GO+RXCS_FUNC+RXCS_DRV+RXCS_IE+RXCS_INIT) /* read/write */
 #define RXCS_GETFNC(x)  (((x) >> RXCS_V_FUNC) & RXCS_M_FUNC)
 
 #define RXES_CRC        0001                            /* CRC error */
