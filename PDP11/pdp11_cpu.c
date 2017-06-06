@@ -863,6 +863,7 @@ while (reason == 0)  {
         else {
             trapea = get_vector (ipl);                  /* get int vector */
             trapnum = TRAP_V_MAX;                       /* defang stk trap */
+//			printf("trap_req %06o trapea %06o\r\n", trap_req, trapea);
             }                                           /* end else t */
         if (trapea == 0) {                              /* nothing to do? */
             trap_req = calc_ints (ipl, 0);              /* recalculate */
@@ -1033,6 +1034,7 @@ while (reason == 0)  {
             case 2:                                     /* RTI */
                 src = ReadW (SP | dsenable);
                 src2 = ReadW (((SP + 2) & 0177777) | dsenable);
+//				if (PC<0100000) printf("RTI to %06o (psw %06o) at %06o\r\n", src, src2, inst_pc);
                 STACKFILE[cm] = SP = (SP + 4) & 0177777;
                 oldrs = rs;
                 put_PSW (src2, (cm != MD_KER));         /* store PSW, prot */

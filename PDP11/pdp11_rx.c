@@ -340,8 +340,10 @@ switch ((PA >> 1) & 1) {                                /* decode PA<1> */
             }
         if ((data & RXCS_IE) == 0)
             CLR_INT (RX);
-        else if ((rx_csr & (RXCS_DONE + RXCS_IE)) == RXCS_DONE)
+        else if ((rx_csr & (RXCS_DONE + RXCS_IE)) == RXCS_DONE) {
+			sim_debug(DBG_TRC, &rx_dev, "interrupting 2\n");
             SET_INT (RX);
+			}
         rx_csr = (rx_csr & ~RXCS_RW) | (data & RXCS_RW);
         break;                                          /* end case RXCS */
 
@@ -461,7 +463,9 @@ switch (rx_state) {                                     /* case on state */
             if (da > uptr->hwmark)
                 uptr->hwmark = da;
             }
-        rx_done (0, 0);                                 /* done */
+//      rx_done (0, 0);                                 /* done */
+		rx_state = CMD_COMPLETE;                /* state = cmd compl */
+		sim_activate (uptr, rx_cwait);
         break;
 
     case CMD_COMPLETE:                                  /* command complete */
@@ -504,16 +508,19 @@ int32 drv = (rx_csr & RXCS_DRV)? 1: 0;
 rx_state = IDLE;                                        /* now idle */
 rx_csr = rx_csr & ~RXCS_TR;
 rx_csr = rx_csr | RXCS_DONE;                            /* set done */
-if (rx_csr & RXCS_IE) SET_INT (RX);                     /* if ie, intr */
 rx_esr = (rx_esr | esr_flags) & ~RXES_DRDY;
 if ((rx_unit[drv].flags & UNIT_ATT) && (esr_flags & RXES_DRDY))
     rx_esr = rx_esr | RXES_DRDY;
 if (new_ecode > 0)                                      /* test for error */
     rx_csr = rx_csr | RXCS_ERR;
-if (new_ecode < 0)                                      /* don't update? */
-    return;
-rx_ecode = new_ecode;                                   /* update ecode */
-rx_dbr = rx_esr;                                        /* update RXDB */
+if (new_ecode >= 0) {                                    /* don't update? */
+	rx_ecode = new_ecode;                                   /* update ecode */
+	rx_dbr = rx_esr;                                        /* update RXDB */
+	}
+if (rx_csr & RXCS_IE) {
+	sim_debug(DBG_TRC, &rx_dev, "interrupting 1 (%06o, %06o)\n", esr_flags, new_ecode);
+	SET_INT (RX);                     /* if ie, intr */
+	}
 return;
 }
 
