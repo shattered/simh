@@ -247,7 +247,7 @@ DEVICE rx_dev = {
    17777172             floppy data register
 */
 
-t_stat rx_rd (int32 *data, int32 PA, int32 access)
+t_stat rx_rd (int32 *data, int32 PA, int32 access)		// ::read
 {
 switch ((PA >> 1) & 1) {                                /* decode PA<1> */
 
@@ -269,12 +269,12 @@ switch ((PA >> 1) & 1) {                                /* decode PA<1> */
         break;
         }                                               /* end switch PA */
 
-sim_debug(DBG_REG, &rx_dev, "R @ PA=%06o, access=%d == %06o\n", PA, access, *data);
+sim_debug(DBG_REG, &rx_dev, "R @ PA=%06o, access=%d == %06o (csr %06o dbr %06o)\n", PA, access, *data, rx_csr, rx_dbr);
 
 return SCPE_OK;
 }
 
-t_stat rx_wr (int32 data, int32 PA, int32 access)
+t_stat rx_wr (int32 data, int32 PA, int32 access)		// ::write
 {
 int32 drv;
 
@@ -463,6 +463,8 @@ switch (rx_state) {                                     /* case on state */
             rx_dbr = rx_ecode;                          /* set dbr */
             rx_done (0, -1);                            /* don't update */
             }
+		else if (func == RXCS_RXES)
+			rx_done (RXES_DRDY, 0);
         else rx_done (0, 0);
         break;
 
@@ -470,13 +472,13 @@ switch (rx_state) {                                     /* case on state */
         rx_unit[0].TRACK = 1;                           /* drive 0 to trk 1 */
         rx_unit[1].TRACK = 0;                           /* drive 1 to trk 0 */
         if ((rx_unit[0].flags & UNIT_BUF) == 0) {       /* not buffered? */
-            rx_done (RXES_ID, RXEC_0HOME);              /* init done, error */
+            rx_done (RXES_ID|RXES_DRDY, RXEC_0HOME);              /* init done, error */
             break;
             }
         da = CALC_DA (1, 1);                            /* track 1, sector 1 */
         for (i = 0; i < RX_NUMBY; i++)                  /* read sector */
             rx_buf[i] = fbuf[da + i];
-        rx_done (RXES_ID, 0);                           /* set done */
+        rx_done (RXES_ID|RXES_DRDY, 0);                           /* set done */
         if ((rx_unit[1].flags & UNIT_ATT) == 0)
             rx_ecode = RXEC_1HOME;
         break;
@@ -489,15 +491,16 @@ return SCPE_OK;
    request interrupt if needed, return to IDLE state.
 */
 
-void rx_done (int32 esr_flags, int32 new_ecode)
+void rx_done (int32 esr_flags, int32 new_ecode)			// ::rx_done
 {
 int32 drv = (rx_csr & RXCS_DRV)? 1: 0;
 
 rx_state = IDLE;                                        /* now idle */
+rx_csr = rx_csr & ~RXCS_TR;
 rx_csr = rx_csr | RXCS_DONE;                            /* set done */
 if (rx_csr & RXCS_IE) SET_INT (RX);                     /* if ie, intr */
 rx_esr = (rx_esr | esr_flags) & ~RXES_DRDY;
-if (rx_unit[drv].flags & UNIT_ATT)
+if ((rx_unit[drv].flags & UNIT_ATT) && (esr_flags & RXES_DRDY))
     rx_esr = rx_esr | RXES_DRDY;
 if (new_ecode > 0)                                      /* test for error */
     rx_csr = rx_csr | RXCS_ERR;
