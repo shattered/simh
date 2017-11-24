@@ -26,7 +26,7 @@
    vc           Qbus video subsystem
 */
 
-#include "dmd5620_defs.h"
+#include "3b2_defs.h"
 #include "dmd5620_sysdev.h"
 #include "dmd5620_uart.h"
 #include "sim_video.h"

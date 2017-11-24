@@ -49,7 +49,7 @@ uint32 io_read(uint32 pa, size_t size)
     sim_debug(IO_D_MSG, &cpu_dev,
               "READ ERROR. No IO device listening at address %08x\n", pa);
 
-    cpu_set_exception(NORMAL_EXCEPTION, EXTERNAL_MEMORY_FAULT);
+    cpu_abort(NORMAL_EXCEPTION, EXTERNAL_MEMORY_FAULT);
 
     return 0xffffffff;
 }
@@ -69,5 +69,5 @@ void io_write(uint32 pa, uint32 val, size_t size)
     sim_debug(IO_D_MSG, &cpu_dev,
               "WRITE ERROR. No IO device listening at address %08x\n", pa);
 
-    cpu_set_exception(NORMAL_EXCEPTION, EXTERNAL_MEMORY_FAULT);
+    cpu_abort(NORMAL_EXCEPTION, EXTERNAL_MEMORY_FAULT);
 }

@@ -27,7 +27,7 @@
 #ifndef __DMD5620_UART_H__
 #define __DMD5620_UART_H__
 
-#include "dmd5620_defs.h"
+#include "3b2_defs.h"
 #include "dmd5620_sysdev.h"
 #include "vax_2681.h"
 #include "sim_tmxr.h"

@@ -31,11 +31,10 @@
 #ifndef _3B2_CPU_H_
 #define _3B2_CPU_H_
 
+#include "3b2_defs.h"
 #ifdef DMD5620
-#include "dmd5620_defs.h"
 #include "dmd5620_io.h"
 #else
-#include "3b2_defs.h"
 #include "3b2_io.h"
 #endif
 

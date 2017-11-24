@@ -1488,9 +1488,9 @@ static SIM_INLINE void cpu_context_switch_1(uint32 new_pcbp)
 
     /* If R is set, save current R0-R8/FP/AP in PCB */
     if (R[NUM_PSW] & PSW_R_MASK) {
-        sim_debug(EXECUTE_MSG, &cpu_dev,
-                  "SAVING REGISTERS R[0]..R[8] (addr=%08x, fp=%08x, r0=%08x to %08x).\n",
-                  R[NUM_PCBP] + 24, R[NUM_FP], R[0], cur_pcbp + 28);
+//      sim_debug(EXECUTE_MSG, &cpu_dev,
+//                "SAVING REGISTERS R[0]..R[8] (addr=%08x, fp=%08x, r0=%08x to %08x).\n",
+//                R[NUM_PCBP] + 24, R[NUM_FP], R[0], cur_pcbp + 28);
         write_w(R[NUM_PCBP] + 24, R[NUM_FP]);
         write_w(R[NUM_PCBP] + 28, R[0]);
         write_w(R[NUM_PCBP] + 32, R[1]);
@@ -1659,8 +1659,10 @@ t_stat sim_instr(void)
             }
         }
 
+#ifndef DMD5620
         /* Process DMA requests */
         dmac_service_drqs();
+#endif
 
         /*
          * Post-increment IU mode pointers (if needed).
@@ -1683,11 +1685,6 @@ t_stat sim_instr(void)
             cpu_nmi = FALSE;
             cpu_in_wait = FALSE;
         }
-
-#ifndef DMD5620
-        /* Process DMA requests */
-        dmac_service_drqs();
-#endif
 
         if (cpu_in_wait) {
             if (sim_idle_enab) {
@@ -2668,7 +2665,7 @@ t_stat sim_instr(void)
                 R[NUM_FP] = read_w(a + 24, ACC_AF);
                 sim_debug(EXECUTE_MSG, &cpu_dev,
                           "PSW<R> IS SET, RESTORING REGISTERS (addr=%08x, fp=%08x, r0=%08x from %08x).\n",
-                          a + 24, R[NUM_FP], read_w(a + 28), a + 28);
+                          a + 24, R[NUM_FP], read_w(a + 28, ACC_AF), a + 28);
                 R[0] = read_w(a + 28, ACC_AF);
                 R[1] = read_w(a + 32, ACC_AF);
                 R[2] = read_w(a + 36, ACC_AF);

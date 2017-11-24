@@ -28,15 +28,8 @@
 #define _DMD5620_SYSDEV_H_
 
 #include "dmd5620_sys.h"
-#include "dmd5620_defs.h"
+#include "3b2_defs.h"
 #include "sim_video.h"
-
-#define NVRAMBASE 0x600000
-#define NVRAMSIZE 0x2000
-#define DADDRBASE 0x500000
-#define DADDRSIZE 0x2
-#define MOUSEBASE 0x400000
-#define MOUSESIZE 0x4
 
 extern DEVICE nvram_dev;
 extern DEVICE daddr_dev;

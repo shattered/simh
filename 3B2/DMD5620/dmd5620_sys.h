@@ -27,7 +27,7 @@
 #ifndef _DMD5620_SYS_H
 #define _DMD5620_SYS_H
 
-#include "dmd5620_defs.h"
+#include "3b2_defs.h"
 
 extern uint32 R[16];
 extern char sim_name[];

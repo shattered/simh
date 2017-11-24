@@ -38,6 +38,8 @@
 #define FALSE 0
 #define TRUE 1
 
+#define ISSET(x,n) (((x)>>(n))&1)
+
 #if defined (__GNUC__)
 #define noret void __attribute__((noreturn))
 #else
@@ -55,7 +57,6 @@ noret __libc_longjmp (jmp_buf buf, int val);
 
 #define MAX_HIST_SIZE  10000000
 #define MIN_HIST_SIZE  64
-#define MAXMEMSIZE     (1 << 22)             /* 4 MB */
 #define MEM_SIZE       (cpu_unit.capac)      /* actual memory size */
 #define UNIT_V_MSIZE   (UNIT_V_UF)
 
@@ -67,24 +68,6 @@ noret __libc_longjmp (jmp_buf buf, int val);
 #define WORD_MASK  0xffffffff
 #define HALF_MASK  0xffffu
 #define BYTE_MASK  0xff
-
-/*
- *
- * Physical memory in the 3B2 is arranged as follows:
- *
- *    0x00000000 - 0x0000FFFF: 64KB ROM (32K used)
- *    0x00040000 - 0x0004FFFF: IO
- *    0x02000000 - 0x023FFFFF: 4MB RAM ("Mainstore"),
- *
- */
-
-#define PHYS_MEM_BASE 0x2000000
-
-#define ROM_BASE      0
-#define IO_BASE       0x40000
-#define IO_SIZE       0x10000
-#define IOB_BASE      0x200000
-#define IOB_SIZE      0x1E00000
 
 /* Register numbers */
 #define NUM_FP         9
@@ -243,6 +226,27 @@ noret __libc_longjmp (jmp_buf buf, int val);
 
 #define PSW_CUR_IPL  (((R[NUM_PSW] & PSW_IPL_MASK) >> PSW_IPL) & 0xf)
 
+#ifndef DMD5620
+/*
+ *
+ * Physical memory in the 3B2 is arranged as follows:
+ *
+ *    0x00000000 - 0x0000FFFF: 64KB ROM (32K used)
+ *    0x00040000 - 0x0004FFFF: IO
+ *    0x02000000 - 0x023FFFFF: 4MB RAM ("Mainstore"),
+ *
+ */
+
+#define PHYS_MEM_BASE 0x2000000
+
+#define ROM_BASE      0
+#define IO_BASE       0x40000
+#define IO_SIZE       0x10000
+#define IOB_BASE      0x200000
+#define IOB_SIZE      0x1E00000
+
+#define MAXMEMSIZE     (1 << 22)             /* 4 MB */
+
 #define TODBASE   0x41000
 #define TODSIZE   0x40
 #define TIMERBASE 0x42000
@@ -251,6 +255,34 @@ noret __libc_longjmp (jmp_buf buf, int val);
 #define NVRAMSIZE 0x1000
 #define CSRBASE   0x44000
 #define CSRSIZE   0x100
+
+#else
+
+#define PHYS_MEM_BASE 0x700000
+
+#define ROM_BASE      0
+#define ROM_SIZE      0x20000
+#define IO_BASE       0x200000
+#define IO_SIZE       0x500000
+
+#define MAXMEMSIZE	   (1 << 20)             /* 1 MB */
+
+#define NVRAMBASE 0x600000
+#define NVRAMSIZE 0x2000
+#define DADDRBASE 0x500000
+#define DADDRSIZE 0x2
+#define MOUSEBASE 0x400000
+#define MOUSESIZE 0x4
+
+/* IRQ sources for IRQ controller (MLD11, MLD12 on terminal logic card) */
+#define	IRQ_PIO01	0	/* 0x01, IPL 14 */
+#define	IRQ_INTM0	1	/* 0x02, IPL 14 */
+#define	IRQ_INTKBD	2	/* 0x04, IPL 14 */
+#define	IRQ_PIO00	3	/* 0x08, IPL 15 */
+#define	IRQ_INT232S	4	/* 0x10, IPL 15 */
+#define	IRQ_INT232R	5	/* 0x20, IPL 15 */
+
+#endif
 
 #define CSRTIMO   0x8000   /* Bus Timeout Error      */
 #define CSRPARE   0x4000   /* Memory Parity Error    */
