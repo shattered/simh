@@ -46,7 +46,7 @@ t_stat nvram_dep(t_value val, t_addr exta, UNIT *uptr, int32 sw);
 t_stat nvram_reset(DEVICE *dptr);
 uint32 nvram_read(uint32 pa, size_t size);
 void nvram_write(uint32 pa, uint32 val, size_t size);
-t_stat nvram_attach (UNIT *uptr, char *cptr);
+t_stat nvram_attach(UNIT *uptr, CONST char *cptr);
 t_stat nvram_detach (UNIT *uptr);
 
 /* Display starting address */

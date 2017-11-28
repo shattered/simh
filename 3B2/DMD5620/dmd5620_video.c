@@ -93,11 +93,11 @@ t_stat vc_svc (UNIT *uptr)
     SIM_MOUSE_EVENT ev;
 
     if (vc_reverse_video) {
-	bg = vid_mono_palette[1];
-	fg = vid_mono_palette[0];
+		bg = vid_mono_palette[1];
+		fg = vid_mono_palette[0];
     } else {
-	bg = vid_mono_palette[0];
-	fg = vid_mono_palette[1];
+		bg = vid_mono_palette[0];
+		fg = vid_mono_palette[1];
     }
 
     for (ln = 0; ln < VC_YSIZE; ln++) {
@@ -115,7 +115,7 @@ t_stat vc_svc (UNIT *uptr)
     vid_refresh ();                                     /* put to screen */
     if (vid_poll_mouse (&ev) == SCPE_OK) {
     	mouse_set_xy(&ev);
-	mouse_buttons(&ev);
+		mouse_buttons(&ev);
     }
 
     vc_poll = sim_rtcn_calb (VC_HZ, 0);                 /* calibrate clock */

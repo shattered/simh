@@ -41,7 +41,7 @@ extern DEVICE uart_dev;
 /* Function prototypes */
 
 t_stat uart_reset(DEVICE *dptr);
-t_stat uart_attach (UNIT *uptr, char *cptr);
+t_stat uart_attach (UNIT *uptr, CONST char *cptr);
 t_stat uart_detach (UNIT *uptr);
 t_stat uart_svc(UNIT *uptr);
 uint32 uart_read(uint32 pa, size_t size);

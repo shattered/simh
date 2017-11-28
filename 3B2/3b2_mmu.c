@@ -281,7 +281,7 @@ uint32 pread_w(uint32 pa)
         sim_debug(READ_MSG, &mmu_dev,
                   "[%08x] Cannot read physical address. ALIGNMENT ISSUE: %08x\n",
                   R[NUM_PC], pa);
-        csr_data |= CSRALGN;
+//      csr_data |= CSRALGN;
         cpu_abort(NORMAL_EXCEPTION, EXTERNAL_MEMORY_FAULT);
     }
 
@@ -311,7 +311,7 @@ void pwrite_w(uint32 pa, uint32 val)
         sim_debug(WRITE_MSG, &mmu_dev,
                   "[%08x] Cannot write physical address. ALIGNMENT ISSUE: %08x\n",
                   R[NUM_PC], pa);
-        csr_data |= CSRALGN;
+//      csr_data |= CSRALGN;
         *crash = pa;
         cpu_abort(NORMAL_EXCEPTION, EXTERNAL_MEMORY_FAULT);
     }
@@ -339,7 +339,7 @@ uint16 pread_h(uint32 pa)
         sim_debug(READ_MSG, &mmu_dev,
                   "[%08x] Cannot read physical address. ALIGNMENT ISSUE %08x\n",
                   R[NUM_PC], pa);
-        csr_data |= CSRALGN;
+//      csr_data |= CSRALGN;
         *crash = pa;
         cpu_abort(NORMAL_EXCEPTION, EXTERNAL_MEMORY_FAULT);
     }
@@ -378,7 +378,7 @@ void pwrite_h(uint32 pa, uint16 val)
         sim_debug(WRITE_MSG, &mmu_dev,
                   "[%08x] Cannot write physical address %08x, ALIGNMENT ISSUE\n",
                   R[NUM_PC], pa);
-        csr_data |= CSRALGN;
+//      csr_data |= CSRALGN;
         *crash = pa;
         cpu_abort(NORMAL_EXCEPTION, EXTERNAL_MEMORY_FAULT);
     }

@@ -39,8 +39,8 @@ DEBTAB sys_deb_tab[] = {
     { "WRITE",      WRITE_MSG,      "Write activity"   },
     { "EXECUTE",    EXECUTE_MSG,    "Execute activity" },
     { "IRQ",        IRQ_MSG,        "Interrupt Handling"    },
-    {"VMOUSE",  SIM_VID_DBG_MOUSE,      "Video Mouse"},
-    {"VKEY",    SIM_VID_DBG_KEY,        "Video Key"},
+    { "VMOUSE",     SIM_VID_DBG_MOUSE,      "Video Mouse"},
+    { "VKEY",       SIM_VID_DBG_KEY,        "Video Key"},
     { NULL,         0                                  }
 };
 
@@ -150,7 +150,7 @@ t_stat nvram_reset(DEVICE *dptr) {
     return SCPE_OK;
 }
 
-t_stat nvram_attach (UNIT *uptr, char *cptr)
+t_stat nvram_attach (UNIT *uptr, CONST char *cptr)
 {
 t_stat r;
 

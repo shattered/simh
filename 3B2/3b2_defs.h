@@ -256,7 +256,25 @@ noret __libc_longjmp (jmp_buf buf, int val);
 #define CSRBASE   0x44000
 #define CSRSIZE   0x100
 
+void cpu_set_irq(uint8 ipl, uint8 id, uint16 csr_flags);
+void cpu_clear_irq(uint8 ipl, uint16 csr_flags);
+
 #else
+
+/*
+ *
+ * Physical memory in the DMD5620 is arranged as follows:
+ *
+	AM_RANGE(0x000000, 0x01ffff) AM_ROM
+	AM_RANGE(0x200000, 0x20001f) AM_DEVREADWRITE8(DUART1_TAG, mc68681_device, read, write, 0x00ff)
+	AM_RANGE(0x200020, 0x20003f) AM_DEVREADWRITE8(DUART2_TAG, mc68681_device, read, write, 0x00ff)
+	AM_RANGE(0x300000, 0x3000ff) AM_NOP	// optional SCC
+	AM_RANGE(0x400000, 0x4000ff) AM_NOP	// mouse
+	AM_RANGE(0x500000, 0x5000ff) AM_NOP	// display starting addr
+	AM_RANGE(0x600000, 0x6000ff) AM_READWRITE8(nvram_r, nvram_w, 0xffff)
+	AM_RANGE(0x700000, 0x7fffff) AM_RAM	// 256K or 1M
+ *
+ */
 
 #define PHYS_MEM_BASE 0x700000
 
@@ -281,6 +299,8 @@ noret __libc_longjmp (jmp_buf buf, int val);
 #define	IRQ_PIO00	3	/* 0x08, IPL 15 */
 #define	IRQ_INT232S	4	/* 0x10, IPL 15 */
 #define	IRQ_INT232R	5	/* 0x20, IPL 15 */
+
+void cpu_set_irq(uint8 ipl, uint8 id, t_bool nmi);
 
 #endif
 
@@ -387,8 +407,6 @@ extern void write_w(uint32 va, uint32 val);
 
 /* Globally scoped CPU functions */
 void cpu_abort(uint8 et, uint8 isc);
-void cpu_set_irq(uint8 ipl, uint8 id, uint16 csr_flags);
-void cpu_clear_irq(uint8 ipl, uint16 csr_flags);
 
 /* Globally scoped IO functions */
 uint32 io_read(uint32 pa, size_t size);

@@ -58,7 +58,7 @@ t_stat uart_reset(DEVICE *dptr)
     return SCPE_OK;
 }
 
-t_stat uart_attach (UNIT *uptr, char *cptr)
+t_stat uart_attach (UNIT *uptr, CONST char *cptr)
 {
     if (uptr == &uart_unit)
         return (tmxr_attach (&uart_desc, uptr, cptr));
@@ -130,13 +130,13 @@ void uart_output_port (uint32 val)
 
     if (ISSET(t, 1)) {
         sim_debug(INIT_MSG, &uart_dev, "%ssetting reverse video\n", ISSET(val, 1) ? "" : "re");
-	vc_set_reverse_video(ISSET(val, 1) ? TRUE : FALSE);
+		vc_set_reverse_video(ISSET(val, 1) ? TRUE : FALSE);
     }
     if (ISSET(t, 4)) {
 	if (ISSET(val, 4))
 	    int_controller_clear(IRQ_INT232R);
 	else {
-	    sim_debug(IRQ_MSG, &uart_dev, "UART interrupting (host rx)\n");
+	    sim_debug(IRQ_MSG, &uart_dev, "UART interrupting (host rx) (pending %02x)\n", int_controller_pending);
 	    int_controller_set(IRQ_INT232R);
 	}
     }
@@ -144,7 +144,7 @@ void uart_output_port (uint32 val)
 	if (ISSET(val, 5))
 	    int_controller_clear(IRQ_INTKBD);
 	else {
-	    sim_debug(IRQ_MSG, &uart_dev, "UART interrupting (kbd rx)\n");
+	    sim_debug(IRQ_MSG, &uart_dev, "UART interrupting (kbd rx) (pending %02x)\n", int_controller_pending);
 	    int_controller_set(IRQ_INTKBD);
 	}
     }
@@ -152,7 +152,7 @@ void uart_output_port (uint32 val)
 	if (ISSET(val, 6))
 	    int_controller_clear(IRQ_INT232S);
 	else {
-	    sim_debug(IRQ_MSG, &uart_dev, "UART interrupting (host tx)\n");
+	    sim_debug(IRQ_MSG, &uart_dev, "UART interrupting (host tx) (pending %02x)\n", int_controller_pending);
 	    int_controller_set(IRQ_INT232S);
 	}
     }
@@ -595,11 +595,13 @@ static void int_controller_set(uint8 value) {
     int_controller_pending &= 0x3f;
 
 //  if (value != IRQ_INTM0)
+    if (old_pending != int_controller_pending)
     sim_debug(IRQ_MSG, &uart_dev, "INTC: set %d (pending %02x -> %02x ipl %d)\n", 
     	value, old_pending, int_controller_pending, int_controller_pal[int_controller_pending]);
-//  if (old_pending != int_controller_pending)
+#if 0
     if (int_controller_pending)
         cpu_set_irq(int_controller_pal[int_controller_pending], int_controller_pending ^ 0x3f, FALSE);
+#endif
 }
 
 static void int_controller_clear(uint8 value) {
@@ -609,8 +611,11 @@ static void int_controller_clear(uint8 value) {
     int_controller_pending &= 0x3f;
 
 //  if (value != IRQ_INTM0)
+	if (old_pending != int_controller_pending)
     sim_debug(IRQ_MSG, &uart_dev, "INTC: clear %d (pending %02x -> %02x ipl %d)\n", 
     	value, old_pending, int_controller_pending, int_controller_pal[int_controller_pending]);
+#if 0
     if (int_controller_pending)
-	cpu_set_irq(int_controller_pal[int_controller_pending], int_controller_pending ^ 0x3f, FALSE);
+		cpu_set_irq(int_controller_pal[int_controller_pending], int_controller_pending ^ 0x3f, FALSE);
+#endif
 }

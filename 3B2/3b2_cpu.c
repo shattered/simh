@@ -72,6 +72,12 @@ extern uint16 csr_data;
 uint32 R[16];
 
 /* Other global CPU state */
+int8   cpu_dtype      = -1;        /* Default datatype for the current
+                                      instruction */
+int8   cpu_etype      = -1;        /* Currently set expanded datatype */
+
+int16  cpu_irq_ipl    = -1;        /* If set, the IRQ level */
+
 t_bool cpu_nmi        = FALSE;     /* If set, there has been an NMI */
 
 int32  pc_incr        = 0;         /* Length (in bytes) of instruction
@@ -731,6 +737,7 @@ t_stat cpu_set_hist(UNIT *uptr, int32 val, CONST char *cptr, void *desc)
         }
         memset(INST, 0, sizeof(instr) * size);
         cpu_hist_size = size;
+		sim_debug(EXECUTE_MSG, &cpu_dev, "history size set to %d\n", size);
     }
 
     return SCPE_OK;
@@ -1510,7 +1517,11 @@ static SIM_INLINE void cpu_context_switch_1(uint32 new_pcbp)
 t_bool cpu_on_interrupt(uint8 ipl)
 {
     uint32 new_pcbp;
+#ifndef DMD5620
     uint16 id = ipl; /* TODO: Does this need to be uint16? */
+#else
+    uint16 id = int_controller_pending ^ 0x3f; /* TODO: Does this need to be uint16? */
+#endif
 
     /*
      * "If a nonmaskable interrupt request is received, an auto-vector
@@ -1662,7 +1673,6 @@ t_stat sim_instr(void)
 #ifndef DMD5620
         /* Process DMA requests */
         dmac_service_drqs();
-#endif
 
         /*
          * Post-increment IU mode pointers (if needed).
@@ -1678,10 +1688,13 @@ t_stat sim_instr(void)
         if (iu_increment_b) {
             increment_modep_b();
         }
+#endif
 
         /* Process pending IRQ, if applicable */
         if (PSW_CUR_IPL < cpu_ipl()) {
+			sim_debug(IRQ_MSG, &cpu_dev, "interrupting at ipl %d\n", cpu_ipl());
             cpu_on_interrupt(cpu_ipl());
+            cpu_irq_ipl = -1;
             cpu_nmi = FALSE;
             cpu_in_wait = FALSE;
         }
@@ -2944,8 +2957,8 @@ static SIM_INLINE void cpu_on_normal_exception(uint8 isc)
                   R[NUM_SP],
                   read_w(R[NUM_PCBP] + 12, ACC_AF),
                   read_w(R[NUM_PCBP] + 16, ACC_AF));
-        abort_context = C_NONE;
-        cpu_abort(STACK_EXCEPTION, STACK_BOUND);
+//      abort_context = C_NONE;
+//      cpu_abort(STACK_EXCEPTION, STACK_BOUND);
     }
 
     cpu_km = FALSE;
@@ -3290,6 +3303,15 @@ static void cpu_write_op(operand * op, t_uint64 val)
 }
 
 /*
+ * Indicate that an IRQ has occured.
+ */
+void cpu_set_irq(uint8 ipl, uint8 id, t_bool nmi)
+{
+    cpu_irq_ipl = ipl;
+    cpu_nmi = nmi;
+}
+
+/*
  * This returns the current state of the IPL (Interrupt
  * Priority Level) bus. This is affected by:
  *
@@ -3305,6 +3327,7 @@ static void cpu_write_op(operand * op, t_uint64 val)
  */
 static SIM_INLINE uint8 cpu_ipl()
 {
+#ifndef DMD5620
     /* CSRPIR9 is cleared by writing to c_pir8 */
     if (csr_data & CSRPIR8) {
         return 8;
@@ -3332,6 +3355,10 @@ static SIM_INLINE uint8 cpu_ipl()
     }
 
     return 0;
+#else
+
+	return int_controller_pal[int_controller_pending];
+#endif
 }
 
 /*
