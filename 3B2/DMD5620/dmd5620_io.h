@@ -37,4 +37,18 @@ struct iolink {
     void        (*write)(uint32 pa, uint32 val, size_t size);
 };
 
+void int_controller_set(uint8 value);
+void int_controller_clear(uint8 value);
+
+static uint8 int_controller_pending = 0;	/* list of pending interrupts */
+static uint8 int_controller_pal[64] = {		/* decode pending interrupts into IPL */
+    0,  14, 14, 14, 14, 14, 14, 14,
+    15, 15, 15, 15, 15, 15, 15, 15,
+    15, 15, 15, 15, 15, 15, 15, 15,
+    15, 15, 15, 15, 15, 15, 15, 15,
+    15, 15, 15, 15, 15, 15, 15, 15,
+    15, 15, 15, 15, 15, 15, 15, 15,
+    15, 15, 15, 15, 15, 15, 15, 15,
+    15, 15, 15, 15, 15, 15, 15, 15 };
+
 #endif

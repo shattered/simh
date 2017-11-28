@@ -71,3 +71,36 @@ void io_write(uint32 pa, uint32 val, size_t size)
 
     cpu_abort(NORMAL_EXCEPTION, EXTERNAL_MEMORY_FAULT);
 }
+
+/* Implementation for the interrupt controller */
+void int_controller_set(uint8 value) {
+    const uint8 old_pending = int_controller_pending;
+
+    int_controller_pending |= (1<<value);
+    int_controller_pending &= 0x3f;
+
+//  if (value != IRQ_INTM0)
+    if (old_pending != int_controller_pending)
+    sim_debug(IRQ_MSG, &cpu_dev, "INTC: set %d (pending %02x -> %02x ipl %d)\n", 
+    	value, old_pending, int_controller_pending, int_controller_pal[int_controller_pending]);
+#if 0
+    if (int_controller_pending)
+        cpu_set_irq(int_controller_pal[int_controller_pending], int_controller_pending ^ 0x3f, FALSE);
+#endif
+}
+
+void int_controller_clear(uint8 value) {
+    const uint8 old_pending = int_controller_pending;
+
+    int_controller_pending &= ~(1<<value);
+    int_controller_pending &= 0x3f;
+
+//  if (value != IRQ_INTM0)
+	if (old_pending != int_controller_pending)
+    sim_debug(IRQ_MSG, &cpu_dev, "INTC: clear %d (pending %02x -> %02x ipl %d)\n", 
+    	value, old_pending, int_controller_pending, int_controller_pal[int_controller_pending]);
+#if 0
+    if (int_controller_pending)
+		cpu_set_irq(int_controller_pal[int_controller_pending], int_controller_pending ^ 0x3f, FALSE);
+#endif
+}

@@ -3356,7 +3356,6 @@ static SIM_INLINE uint8 cpu_ipl()
 
     return 0;
 #else
-
 	return int_controller_pal[int_controller_pending];
 #endif
 }

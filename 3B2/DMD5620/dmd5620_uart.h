@@ -58,18 +58,4 @@ t_stat ln_wr (uint8 c);
 
 void vc_set_reverse_video (t_bool set);
 
-static void int_controller_set(uint8 value);
-static void int_controller_clear(uint8 value);
-
-static uint8 int_controller_pending = 0;	/* list of pending interrupts */
-static uint8 int_controller_pal[64] = {		/* decode pending interrupts into IPL */
-    0,  14, 14, 14, 14, 14, 14, 14,
-    15, 15, 15, 15, 15, 15, 15, 15,
-    15, 15, 15, 15, 15, 15, 15, 15,
-    15, 15, 15, 15, 15, 15, 15, 15,
-    15, 15, 15, 15, 15, 15, 15, 15,
-    15, 15, 15, 15, 15, 15, 15, 15,
-    15, 15, 15, 15, 15, 15, 15, 15,
-    15, 15, 15, 15, 15, 15, 15, 15 };
-
 #endif

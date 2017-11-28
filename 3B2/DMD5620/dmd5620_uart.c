@@ -25,6 +25,7 @@
 */
 
 #include "dmd5620_uart.h"
+#include "dmd5620_io.h"
 
 
 UNIT uart_unit = { UDATA(&uart_svc, UNIT_ATTABLE|TT_MODE_7B, 0), 1000L };
@@ -136,7 +137,7 @@ void uart_output_port (uint32 val)
 	if (ISSET(val, 4))
 	    int_controller_clear(IRQ_INT232R);
 	else {
-	    sim_debug(IRQ_MSG, &uart_dev, "UART interrupting (host rx) (pending %02x)\n", int_controller_pending);
+	    sim_debug(IRQ_MSG, &uart_dev, "UART interrupting (host rx)\n");
 	    int_controller_set(IRQ_INT232R);
 	}
     }
@@ -144,7 +145,7 @@ void uart_output_port (uint32 val)
 	if (ISSET(val, 5))
 	    int_controller_clear(IRQ_INTKBD);
 	else {
-	    sim_debug(IRQ_MSG, &uart_dev, "UART interrupting (kbd rx) (pending %02x)\n", int_controller_pending);
+	    sim_debug(IRQ_MSG, &uart_dev, "UART interrupting (kbd rx)\n");
 	    int_controller_set(IRQ_INTKBD);
 	}
     }
@@ -152,7 +153,7 @@ void uart_output_port (uint32 val)
 	if (ISSET(val, 6))
 	    int_controller_clear(IRQ_INT232S);
 	else {
-	    sim_debug(IRQ_MSG, &uart_dev, "UART interrupting (host tx) (pending %02x)\n", int_controller_pending);
+	    sim_debug(IRQ_MSG, &uart_dev, "UART interrupting (host tx)\n");
 	    int_controller_set(IRQ_INT232S);
 	}
     }
@@ -585,37 +586,4 @@ t_stat ln_wr (uint8 c)
     temp = tmxr_putc_ln (&uart_ldsc[0], c);
     tmxr_poll_tx (&uart_desc);
     return temp;
-}
-
-/* Implementation for the interrupt controller */
-static void int_controller_set(uint8 value) {
-    const uint8 old_pending = int_controller_pending;
-
-    int_controller_pending |= (1<<value);
-    int_controller_pending &= 0x3f;
-
-//  if (value != IRQ_INTM0)
-    if (old_pending != int_controller_pending)
-    sim_debug(IRQ_MSG, &uart_dev, "INTC: set %d (pending %02x -> %02x ipl %d)\n", 
-    	value, old_pending, int_controller_pending, int_controller_pal[int_controller_pending]);
-#if 0
-    if (int_controller_pending)
-        cpu_set_irq(int_controller_pal[int_controller_pending], int_controller_pending ^ 0x3f, FALSE);
-#endif
-}
-
-static void int_controller_clear(uint8 value) {
-    const uint8 old_pending = int_controller_pending;
-
-    int_controller_pending &= ~(1<<value);
-    int_controller_pending &= 0x3f;
-
-//  if (value != IRQ_INTM0)
-	if (old_pending != int_controller_pending)
-    sim_debug(IRQ_MSG, &uart_dev, "INTC: clear %d (pending %02x -> %02x ipl %d)\n", 
-    	value, old_pending, int_controller_pending, int_controller_pal[int_controller_pending]);
-#if 0
-    if (int_controller_pending)
-		cpu_set_irq(int_controller_pal[int_controller_pending], int_controller_pending ^ 0x3f, FALSE);
-#endif
 }
